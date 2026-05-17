@@ -97,23 +97,32 @@ Software Requirements Analysis & System Design — Final Project
 - **Output**: predicted branch coverage ∈ [0, 1]
 - **Threshold**: coverage < 0.3 → remove as noise
 - **Model**: fine-tuned GPT-2 (117M params)
+- **Proposed improvement**: Qwen2.5-Coder 0.5B (code-specialized, 4× params)
 - **Fallback**: gracefully skipped if no GPU
 
 ---
 
 # Slide 7: Key Innovation — Why Not Just Use LLM?
 
-## Model-Driven vs Pure LLM
+## Model-Driven vs Pure LLM: Three Root Causes
 
-| | Pure LLM | Our System |
-|--|----------|------------|
-| Annotation detection | ❌ No 21,954-pattern dict | ✅ Aho-Corasick exact match |
-| Syntax analysis | ⚠️ Approximation | ✅ tree-sitter AST parsing |
-| Semantic understanding | ✅ Strong | ✅ LLM for borderline only |
-| Cost (500 samples) | $0.25 | **$0.01** (25× cheaper) |
-| Speed (600K samples) | ~55 hours | **2.6 minutes** |
+**1. Dictionary Knowledge Gap**
+- 21,954 annotation patterns → Aho-Corasick recalls 100%
+- LLM recalls only ~58% (misses rare patterns like `@ScalarFunction`)
 
-> **"Right tool for the right job"** within an orchestrated pipeline
+**2. Structural vs Textual Analysis**
+- tree-sitter: exact AST parsing → "block has < 3 children" = empty
+- LLM: reads text → "looks like normal code?" → misses subtle cases
+
+**3. Cost at Scale (600K samples)**
+
+| | Model-Driven | Pure LLM |
+|--|:--:|:--:|
+| Rule processing | $0 | — |
+| LLM calls | $12 (12.7% only) | $180-300 (100%) |
+| Speed | 2.6 min | ~55 hours |
+
+> **Core principle: each subtask uses the smallest, most appropriate tool**
 
 ---
 
@@ -162,7 +171,7 @@ make install
 
 # Slide 10: Conclusion
 
-## Three Contributions
+## Four Contributions
 
 1. **First skill-based CleanTest implementation**
    - 4 composable Agent Skills, compatible with CodeBuddy/Claude Code/Cursor
@@ -175,8 +184,11 @@ make install
    - 18.8× speedup for annotation matching (Filter 1)
    - 11.5× speedup for the full pipeline (30 min → 2.6 min)
 
+4. **Proposed improvement: Qwen2.5-Coder 0.5B** replaces GPT-2
+   - Code-specialized pre-training, 4× parameters, runs on consumer hardware
+
 ### Core Message
-> **Systematic software design (rules + model + LLM orchestration)
-> outperforms "throw everything at LLM" approaches.**
+> **Software system design — decomposing tasks and choosing the right tool for each —
+> remains essential in the AI era. Not everything should be thrown at an LLM.**
 
 ## Thank You & Q&A

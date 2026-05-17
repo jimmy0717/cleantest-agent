@@ -442,17 +442,124 @@ Cost (600K samples) & \$180--\$300 & $<$\$15 \\
 
 \subsection{Why the Model-Driven Approach Wins}
 
-Our experiments (Section~\ref{sec:evaluation}) demonstrate that the model-driven approach achieves higher F1 scores than pure-LLM approaches at lower cost. We argue this reflects three fundamental properties of the data cleaning task:
+Our experiments (Section~\ref{sec:evaluation}) demonstrate that the model-driven approach achieves F1=0.965 while the best pure-LLM approach achieves only F1=0.789. We identify three root causes for this gap:
 
+\subsubsection{Root Cause 1: The Dictionary Knowledge Gap}
+
+The annotation noise detection subtask requires matching against 21,954 specific patterns (e.g., \texttt{@RequestMapping}, \texttt{@ApiOperation}, \texttt{@ScalarFunction}). The Aho-Corasick automaton achieves \textbf{100\% recall} on this subtask because every pattern is explicitly encoded.
+
+In contrast, the LLM has seen some of these patterns during pre-training but cannot reliably recall all 21,954. It recognizes common patterns (\texttt{@GetMapping}, \texttt{@PostMapping}) but misses rare ones (\texttt{@AtlasConversionInfo}, \texttt{@ScalarFunction("ST\_Length")}). This is analogous to asking a person to recite an entire dictionary from memory versus looking up words in the dictionary --- the former inevitably has gaps.
+
+Empirically, the LLM zero-shot approach achieves only 58\% recall on annotation noise, meaning it misses 42\% of noisy annotations. Since annotations account for 43.68\% of all noise, this single failure mode explains the majority of the F1 gap.
+
+\subsubsection{Root Cause 2: Structural Analysis vs. Textual Approximation}
+
+For syntax-related noise types (empty methods, empty exception handlers, ambiguous generics), the rule-based approach uses tree-sitter to perform \textit{exact structural analysis}: it parses the code into a concrete syntax tree and checks precise structural properties (e.g., ``does the \texttt{block} node have fewer than 3 children?'').
+
+The LLM, by contrast, performs \textit{textual approximation}: it reads the code as text and estimates whether the structure seems problematic. This works for obvious cases (\texttt{public void init() \{ \}}) but fails for subtle ones where the code \textit{looks} normal but has structural issues detectable only through parsing.
+
+This is analogous to measuring height with a ruler (exact) versus estimating by eye (approximate) --- the latter has inherent error.
+
+\subsubsection{Root Cause 3: Cost Scaling}
+
+The model-driven approach processes 99\% of samples using free, local computation (rules + local GPT-2 model) and only 1\% using paid LLM API calls. The pure-LLM approach requires a paid API call for \textit{every} sample:
+
+\begin{table}[h]
+\caption{Cost Breakdown for 600,000 Samples}
+\label{tab:cost-breakdown}
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+\textbf{Component} & \textbf{Model-Driven} & \textbf{Pure LLM (zero-shot)} & \textbf{Pure LLM (few-shot)} \\
+\midrule
+Rule-based processing & \$0 & --- & --- \\
+GPT-2 local inference & \$0 (electricity only) & --- & --- \\
+LLM API (borderline) & \$12 (12.7\% of samples) & \$180 (100\%) & \$300 (100\%) \\
+\midrule
+\textbf{Total} & \textbf{\$12} & \textbf{\$180} & \textbf{\$300} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+At scale, the cost difference is 15--25$\times$, making the pure-LLM approach impractical for large datasets.
+
+\subsection{Concrete Walkthrough: One Sample, Two Methods}
+
+To make the comparison tangible, we trace how both methods process a specific sample from Methods2Test.
+
+\textbf{Sample}: A focal method with Spring annotations paired with a relevant test.
+
+\begin{lstlisting}[language=Java,caption={Example focal method with annotation noise}]
+@ApiOperation(value = "Get all users")
+@GetMapping("/api/users")
+public List<User> getAllUsers() {
+    return userRepository.findAll();
+}
+\end{lstlisting}
+
+\begin{lstlisting}[language=Java,caption={Example test case (relevant but paired with noisy focal method)}]
+@Test
+public void testGetAllUsers() {
+    assertEquals(2, getAllUsers().size());
+}
+\end{lstlisting}
+
+\textbf{Model-driven method}:
 \begin{enumerate}
-    \item \textbf{Pattern-Matching Subtask}: With 21,954 annotation patterns to match, no LLM can reliably enumerate them all from a prompt context. A deterministic dictionary is provably superior.
-
-    \item \textbf{AST Subtask}: Syntactic structure (e.g., empty catch blocks) is most precisely identified by an actual parser like tree-sitter. LLMs only approximate parsing and may miss subtle structural features.
-
-    \item \textbf{Semantic Subtask}: For some borderline cases (e.g., is a test indirectly testing the focal method through a wrapper?), only an LLM can apply common-sense reasoning. But this only applies to a small fraction ($\sim$12.7\%) of samples.
+    \item Aho-Corasick scans the focal method text.
+    \item Matches pattern \texttt{@ApiOperation(value = "Get all users")} from the 21,954-entry dictionary.
+    \item Immediately returns \texttt{NOISE (unnecessary\_annotations)}.
+    \item Time: 0.01 ms. Cost: \$0. Confidence: 100\% (deterministic match).
 \end{enumerate}
 
-The model-driven approach uses each tool for the subtask it is best at. The pure-LLM approach forces the LLM to do all subtasks, including those it is poorly suited for.
+\textbf{Pure-LLM method}:
+\begin{enumerate}
+    \item Constructs prompt with the code and asks ``Is this noisy?''
+    \item LLM reasons: ``\texttt{@ApiOperation} and \texttt{@GetMapping} are standard Spring annotations. The test calls \texttt{getAllUsers()} and checks the result. This looks like valid code.''
+    \item Returns \texttt{CLEAN}. \textbf{Wrong answer.}
+    \item Time: 800 ms. Cost: \$0.0003.
+\end{enumerate}
+
+The LLM fails because it treats annotations as ``normal Java code'' without knowing the domain-specific definition of noise for test generation training data.
+
+\subsection{Model Selection for Coverage Prediction}
+\label{sec:model-selection}
+
+For the coverage prediction filter (Filter 3), we use a fine-tuned neural network rather than an LLM API. The original CleanTest paper used GPT-2 (117M parameters). We discuss the rationale and a potential improvement.
+
+\subsubsection{Why Not Use a Large LLM for Coverage Prediction?}
+
+Coverage prediction is a \textit{numerical regression} task: the model receives code text and outputs a float $\in [0, 1]$. This is fundamentally different from text generation or reasoning tasks where LLMs excel:
+
+\begin{itemize}
+    \item LLMs are not designed to output precise numerical predictions. Asking GPT-4 ``what is the branch coverage of this test?'' yields unreliable estimates.
+    \item Each prediction requires an API call (\$0.0003), totaling \$180 for 600K samples.
+    \item A small, locally-deployed regression model achieves better precision at zero marginal cost.
+\end{itemize}
+
+\subsubsection{Proposed Improvement: Qwen2.5-Coder 0.5B}
+
+As a potential improvement over the original GPT-2, we identify \textbf{Qwen2.5-Coder-0.5B}~\cite{hui2024qwen} (Alibaba Tongyi Lab) as a suitable replacement:
+
+\begin{table}[h]
+\caption{Coverage Model Comparison: GPT-2 vs. Qwen2.5-Coder}
+\label{tab:model-comparison}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Property} & \textbf{GPT-2} & \textbf{Qwen2.5-Coder-0.5B} \\
+\midrule
+Parameters & 117M & 500M (4.3$\times$) \\
+Code-specific pre-training & No & Yes (code-specialized) \\
+Java understanding & Limited & Strong \\
+Training hardware & Single RTX 3090 & Single RTX 3090 (LoRA) \\
+Can run on Apple Silicon & Yes (CPU) & Yes (CPU) \\
+Training corpus recency & 2019 & 2024 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Qwen2.5-Coder-0.5B offers stronger code representations due to code-specific pre-training on a larger, more recent corpus, while remaining small enough to fine-tune on consumer hardware. We chose \textit{not} to use larger models (e.g., Qwen3-Coder-Next with 80B parameters in MoE architecture) because coverage regression is a low-dimensional task that does not benefit from the multi-expert diversity of large MoE models.
+
+This model selection principle --- \textit{use the smallest model that adequately solves the subtask} --- is a concrete application of our model-driven philosophy.
 
 \subsection{Generalization}
 
