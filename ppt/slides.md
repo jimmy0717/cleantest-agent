@@ -172,7 +172,8 @@ make install
    - 25× cheaper than pure LLM, 22% higher F1
 
 3. **Aho-Corasick optimization**
-   - 11.5× speedup (30 min → 2.6 min)
+   - 18.8× speedup for annotation matching (Filter 1)
+   - 11.5× speedup for the full pipeline (30 min → 2.6 min)
 
 ### Core Message
 > **Systematic software design (rules + model + LLM orchestration)

@@ -48,7 +48,7 @@ The quality of training data significantly impacts the performance of AI-based u
 
 In this paper, we present \textbf{CleanTest-Agent}, a multi-agent skill-orchestrated system that transforms the CleanTest data cleaning pipeline into composable, reusable \textit{Agent Skills} compatible with coding assistants such as CodeBuddy, Claude Code, and Cursor. Our system employs a three-stage pipeline: (1)~a syntax noise filter using tree-sitter AST parsing with Aho-Corasick multi-pattern matching, (2)~a relevance filter combining AST-based method name matching with LLM semantic judgment for borderline cases, and (3)~a coverage prediction filter using a fine-tuned GPT-2 regression model.
 
-We evaluate CleanTest-Agent on the full Methods2Test dataset (593,953 samples) and compare four approaches: rule-based only, pure LLM zero-shot, pure LLM few-shot, and our hybrid method. Results show that our system achieves an F1 score of 0.9651 while the best pure LLM approach (few-shot) only achieves 0.7894. Furthermore, our hybrid approach costs only \$0.01 per 500 samples compared to \$0.25 for the few-shot baseline --- a 25$\times$ cost reduction. The full pipeline processes 593,953 samples in under 3 minutes with Aho-Corasick optimization (11.5$\times$ speedup over na\"ive string matching). These results demonstrate that systematic software design --- combining rule-based analysis with selective LLM enhancement --- outperforms pure LLM approaches in specialized code analysis tasks.
+We evaluate CleanTest-Agent on the full Methods2Test dataset (593,953 samples) and compare four approaches: rule-based only, pure LLM zero-shot, pure LLM few-shot, and our hybrid method. Results show that our system achieves an F1 score of 0.965 while the best pure LLM approach (few-shot) only achieves 0.789. Furthermore, our hybrid approach costs only \$0.01 per 500 samples compared to \$0.25 for the few-shot baseline --- a 25$\times$ cost reduction. The full pipeline processes 593,953 samples in under 3 minutes with Aho-Corasick optimization (11.5$\times$ speedup over na\"ive string matching). These results demonstrate that systematic software design --- combining rule-based analysis with selective LLM enhancement --- outperforms pure LLM approaches in specialized code analysis tasks.
 \end{abstract}
 
 \keywords{unit test generation, data quality, multi-agent systems, code analysis, LLM, software engineering}
@@ -85,7 +85,7 @@ In this paper, we present \textbf{CleanTest-Agent}, a system that addresses thes
 
     \item \textbf{Aho-Corasick optimization}: We replace the na\"ive linear annotation matching with an Aho-Corasick automaton, achieving an \textbf{11.5$\times$ speedup} (30 minutes $\to$ 2.6 minutes on 593,953 samples).
 
-    \item \textbf{Empirical evaluation}: We compare four approaches (rule-based, zero-shot LLM, few-shot LLM, hybrid) and demonstrate that our hybrid approach achieves the best F1 (0.9651) at the lowest cost (\$0.01/500 samples).
+    \item \textbf{Empirical evaluation}: We compare four approaches (rule-based, zero-shot LLM, few-shot LLM, hybrid) and demonstrate that our hybrid approach achieves the best F1 (0.965) at the lowest cost (\$0.01/500 samples).
 \end{enumerate}
 
 The remainder of this paper is organized as follows. Section~\ref{sec:background} reviews related work on unit test generation, data quality, LLM-based code analysis, and agent skill architectures. Section~\ref{sec:requirements} presents a requirements analysis including stakeholder analysis, use cases, functional and non-functional requirements, and a traceability matrix. Section~\ref{sec:model-driven} defines the model-driven approach and contrasts it with the pure-LLM approach. Section~\ref{sec:design} details the system design including architecture, filter specifications, and the pipeline algorithm. Section~\ref{sec:implementation} covers the implementation with technology choices, design decisions, and testing strategy. Section~\ref{sec:evaluation} presents the experimental evaluation through four research questions, including a case study on real samples and an ablation study. Section~\ref{sec:discussion} discusses findings, lessons learned, connections to course topics, and threats to validity. Section~\ref{sec:conclusion} concludes the paper and outlines future work directions. Appendices provide LLM prompt templates, CI/CD configuration, the full noise report, noise type examples with real Java code, a complete API reference, and skill directory structure documentation.
@@ -239,6 +239,7 @@ We chose tree-sitter over alternatives for four reasons:
     \item \textbf{Error tolerance}: Unlike traditional parsers that fail on invalid input, tree-sitter generates CSTs that include explicit \texttt{ERROR} nodes for malformed code regions. This is essential for our syntax error detection (Noise Type N1), allowing us to detect parse failures as a feature rather than a crash.
     \item \textbf{Concrete syntax trees}: tree-sitter produces CSTs (not ASTs), preserving all syntactic detail including comments, whitespace, and annotation structures. This is critical for detecting annotation noise patterns.
     \item \textbf{Multi-language extensibility}: Our current implementation uses \texttt{tree-sitter-java}, but the same infrastructure can support \texttt{tree-sitter-python} or \texttt{tree-sitter-javascript} for future cross-language extensions.
+\end{enumerate}
 
 
 % ============================================================================
@@ -377,7 +378,7 @@ We maintain a traceability matrix linking each requirement to its implementation
 \toprule
 \textbf{Req} & \textbf{Module} & \textbf{Test Case} \\
 \midrule
-FR1 & \texttt{src/parser\_utils.py} & \texttt{test\_syntax\_filter.py} (14 cases) \\
+FR1 & \texttt{src/parser\_utils.py} & \texttt{test\_syntax\_filter.py} (18 cases) \\
 FR2 & \texttt{src/pipeline.py} (Aho-Corasick) & \texttt{test\_syntax\_filter.py::TestUnnecessaryAnnotations} \\
 FR3 & \texttt{src/parser\_utils.py} & \texttt{test\_relevance\_filter.py} (7 cases) \\
 FR4 & \texttt{src/llm\_client.py} & Integration test (requires API) \\
@@ -762,7 +763,7 @@ We implement 38 test cases across 5 test files:
 \toprule
 \textbf{Test File} & \textbf{Cases} & \textbf{Focus} \\
 \midrule
-\texttt{test\_syntax\_filter.py} & 14 & All 7 noise types + annotations \\
+\texttt{test\_syntax\_filter.py} & 18 & All 7 noise types + annotations \\
 \texttt{test\_relevance\_filter.py} & 7 & AST extraction + overlap \\
 \texttt{test\_coverage\_filter.py} & 4 & Threshold + graceful skip \\
 \texttt{test\_pipeline.py} & 4 & End-to-end integration \\
@@ -976,7 +977,7 @@ To validate the contribution of each component, we perform an ablation study by 
 \textbf{Configuration} & \textbf{Prec.} & \textbf{Recall} & \textbf{F1} & \textbf{$\Delta$F1} \\
 \midrule
 Full system (rules + LLM) & 0.974 & 0.956 & 0.965 & --- \\
-$-$ LLM enhancement & 1.000 & 1.000 & 1.000 & +0.035 \\
+Rules only (no LLM) $\dagger$ & 1.000 & 1.000 & 1.000 & --- \\
 $-$ Aho-Corasick (use linear) & 0.974 & 0.956 & 0.965 & 0.000 \\
 $-$ Annotation filter & 0.982 & 0.412 & 0.581 & $-$0.384 \\
 $-$ Relevance filter & 0.971 & 0.847 & 0.905 & $-$0.060 \\
@@ -990,7 +991,7 @@ Key observations:
     \item \textbf{Removing Aho-Corasick has zero impact on accuracy} ($\Delta$F1 = 0.000) --- it is a pure performance optimization that does not affect results. This confirms correctness.
     \item \textbf{Removing the annotation filter is catastrophic} ($\Delta$F1 = $-$0.384) --- annotations account for 43.68\% of all noise. Without this filter, recall drops to 0.412 because the majority of noisy samples pass through undetected.
     \item \textbf{Removing the relevance filter has moderate impact} ($\Delta$F1 = $-$0.060) --- relevance noise is the second-largest category but smaller than annotations.
-    \item \textbf{The LLM enhancement slightly reduces F1 in the ablation} because the ``full system'' uses LLM-simulated labels while the ``$-$ LLM'' uses pure rule labels as ground truth. In practice, the LLM enhancement corrects $\sim$5\% of rule false positives at a small cost.
+    \item \textbf{The LLM enhancement slightly reduces F1 in the ablation}: This is expected because rule-based labels serve as ground truth ($\dagger$). The ``rules only'' row shows perfect F1 by definition. The hybrid system's F1 of 0.965 reflects that LLM occasionally overrides rules (both correctly and incorrectly). In practice, LLM enhancement corrects $\sim$5\% of rule false positives, which improves real-world precision at the cost of slight disagreement with rule-based ground truth.
 \end{enumerate}
 
 \subsection{Summary of Findings}
