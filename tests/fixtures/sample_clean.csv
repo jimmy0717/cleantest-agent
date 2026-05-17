@@ -1,0 +1,5 @@
+src_fm,target
+"public int add(int a, int b) { return a + b; }","@Test public void testAdd() { assertEquals(3, add(1, 2)); }"
+"public String greet(String name) { return ""Hello "" + name; }","@Test public void testGreet() { assertEquals(""Hello World"", greet(""World"")); }"
+"public boolean isEmpty(List list) { return list.size() == 0; }","@Test public void testIsEmpty() { assertTrue(isEmpty(new ArrayList())); }"
+"public void save(String data) { db.insert(data); }","@Test public void testSave() { save(""test""); verify(db).insert(""test""); }"

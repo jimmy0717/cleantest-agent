@@ -1,0 +1,9 @@
+src_fm,target
+"public int add(int a, int b) { return a + b; }","@Test public void testAdd() { assertEquals(3, add(1, 2)); }"
+"public <T> T getValue() { return null; }","@Test public void testGetValue() { assertNull(getValue()); }"
+"public void process() { try { doWork(); } catch(Exception e) {} }","@Test public void testProcess() { process(); }"
+"public void emptyFunc() { }","@Test public void testEmpty() { emptyFunc(); }"
+"public int calculate(int x) { return x * 2; }","@Test public void testUnrelated() { String s = ""hello""; assertEquals(5, s.length()); }"
+"public void save(String data) { db.insert(data); }","@Test public void testSave() { save(""test""); verify(db).insert(""test""); }"
+"public int compute(int n) { // 计算阶乘 return factorial(n); }","@Test public void testCompute() { assertEquals(6, compute(3)); }"
+"public synchronized void update() { counter++; }","@Test public void testUpdate() { update(); assertEquals(1, getCounter()); }"
