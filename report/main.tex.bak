@@ -1,4 +1,4 @@
-\documentclass[acmlarge,nonacm,screen]{acmart}
+\documentclass[sigconf,nonacm]{acmart}
 
 \usepackage{booktabs}
 \usepackage{listings}
@@ -54,9 +54,6 @@ We evaluate CleanTest-Agent on the full Methods2Test dataset (593,953 samples) a
 \keywords{unit test generation, data quality, multi-agent systems, code analysis, LLM, software engineering}
 
 \maketitle
-
-\tableofcontents
-\newpage
 
 % ============================================================================
 \section{Introduction}
@@ -128,102 +125,25 @@ The concept of composable agent skills has gained traction with the rise of AI c
 
 Our work adapts this protocol for the data quality domain, demonstrating that the skill-based architecture is applicable beyond coding and writing tasks.
 
-\subsection{The Aho-Corasick Algorithm}
-
-The Aho-Corasick algorithm~\cite{aho1975efficient}, developed by Alfred Aho and Margaret Corasick at Bell Labs in 1975, is a classic string-matching algorithm that locates all occurrences of a finite set of patterns within a text in time $O(n+m+z)$, where $n$ is the text length, $m$ is the total pattern length, and $z$ is the number of matches. This contrasts with a na\"ive approach requiring $O(n \cdot k)$ time, where $k$ is the number of patterns.
-
-The algorithm constructs a finite-state automaton from the pattern set in a preprocessing step, then performs a single pass over the text. The key innovation is the use of \textit{failure links} that allow the automaton to efficiently transition between matching states without backtracking, similar to KMP but generalized to multiple patterns.
-
-For our application with 21,954 patterns, Aho-Corasick is dramatically more efficient than na\"ive linear matching. We use the \texttt{pyahocorasick}~\cite{pyahocorasick} Python library, which provides a C-extension implementation with minimal Python overhead.
-
-\subsection{Tree-sitter for AST Parsing}
-
-\textbf{tree-sitter}~\cite{brunsfeld2018treesitter} is a parser generator and incremental parsing library that builds a concrete syntax tree for source files in over 50 programming languages. We chose tree-sitter over alternatives like Antlr or javalang for several reasons: (1)~implemented in C with Python bindings, providing high parsing throughput; (2)~it generates concrete syntax trees that include \texttt{ERROR} nodes for malformed input, allowing us to detect syntax errors as a noise type without separate validation logic; (3)~multi-language support enables future extensions to Python or JavaScript test data.
-
 
 % ============================================================================
 \section{Requirements Analysis}
 \label{sec:requirements}
 % ============================================================================
 
-\subsection{Stakeholder Analysis}
-
-We identify three primary stakeholder groups for CleanTest-Agent:
-
-\begin{table}[h]
-\caption{Stakeholder Analysis}
-\label{tab:stakeholders}
-\begin{tabular}{@{}lp{3cm}p{5.5cm}@{}}
-\toprule
-\textbf{Stakeholder} & \textbf{Role} & \textbf{Primary Needs} \\
-\midrule
-ML/AI Researchers & Train test generation models & Reproducible cleaning pipeline, transparent noise reports, configurable thresholds, batch processing \\
-Software Engineers & Daily development workflow & Easy invocation via natural language, fast feedback, IDE integration \\
-Tool Maintainers & Extend the system & Modular architecture, clear interfaces, comprehensive documentation \\
-\bottomrule
-\end{tabular}
-\end{table}
-
 \subsection{Problem Statement}
 
-Given a unit test training dataset $D = \{(f_i, t_i)\}_{i=1}^{N}$ where $f_i$ is a focal method and $t_i$ is a test case, the goal is to:
-
-\begin{enumerate}
-    \item Identify which samples are \textit{noisy} (would degrade model training).
-    \item Categorize each noisy sample by noise type.
-    \item Output a cleaned dataset $D' \subseteq D$ along with a structured noise report.
-    \item Provide this functionality through both a CLI interface and an Agent Skill interface.
-\end{enumerate}
-
-The noise types are pre-defined according to the CleanTest framework, but the architecture should make it easy to add new noise types in the future without modifying existing code.
+Given a unit test training dataset $D = \{(f_i, t_i)\}_{i=1}^{N}$ where $f_i$ is a focal method and $t_i$ is a test case, the goal is to identify and remove noisy samples that would degrade the performance of test generation models trained on $D$.
 
 \subsection{Use Cases}
 
 We identify three primary use cases:
 
-\subsubsection{UC1: Batch Dataset Cleaning}
+\textbf{UC1: Batch Dataset Cleaning.} A researcher preparing a training dataset invokes the pipeline on a CSV file containing focal method--test case pairs. The system processes all samples through three filter stages and outputs a cleaned dataset with a noise report.
 
-\textbf{Actor}: ML/AI Researcher.
-\textbf{Precondition}: Researcher has a CSV dataset with at minimum \texttt{src\_fm} and \texttt{target} columns.
+\textbf{UC2: Interactive Noise Inspection.} A developer using a coding assistant (e.g., CodeBuddy) asks ``check if this test is noisy'' for individual samples. The system invokes the appropriate filter skill and provides a diagnosis with confidence.
 
-\textbf{Main Flow}:
-\begin{enumerate}
-    \item Researcher invokes the pipeline via CLI or natural language through a coding assistant.
-    \item System loads the dataset and deduplicates by \texttt{target} column.
-    \item System runs Filter 1 (syntax noise), reporting per-noise-type statistics.
-    \item System runs Filter 2 (relevance), reporting irrelevant test-focal pairs.
-    \item System optionally runs Filter 3 (coverage) if GPU and trained model are available.
-    \item System outputs: \texttt{filtered\_data.csv}, \texttt{noise\_report.json}, \texttt{summary.md}.
-\end{enumerate}
-
-\textbf{Postcondition}: Researcher has a cleaned CSV file and detailed noise statistics.
-
-\textbf{Alternative Flow}: If the CSV is missing required columns, the system raises a \texttt{ValueError} with a descriptive message listing available columns.
-
-\subsubsection{UC2: Interactive Noise Inspection}
-
-\textbf{Actor}: Software Engineer using a coding assistant.
-
-\textbf{Main Flow}:
-\begin{enumerate}
-    \item Engineer asks: ``Is this test noisy?'' and pastes a code snippet.
-    \item The coding assistant triggers the appropriate filter skill based on intent.
-    \item The filter analyzes the sample and returns: noise type (if any), confidence, and reasoning.
-    \item Engineer optionally asks for LLM second-opinion for borderline cases.
-\end{enumerate}
-
-\subsubsection{UC3: Pipeline Extension}
-
-\textbf{Actor}: Tool Maintainer.
-
-\textbf{Main Flow}:
-\begin{enumerate}
-    \item Maintainer creates a new directory \texttt{skills/cleantest-X-filter/}.
-    \item Writes \texttt{SKILL.md} with description and trigger phrases.
-    \item Implements detection logic in \texttt{scripts/X\_filter.py}.
-    \item Adds a new stage in \texttt{src/pipeline.py} that calls the new filter.
-    \item Adds unit tests and runs CI to verify.
-\end{enumerate}
+\textbf{UC3: Incremental Filter Extension.} A researcher wants to add a new noise type (e.g., flaky test detection). They create a new skill directory with a \texttt{SKILL.md} and register it with the pipeline orchestrator without modifying existing code.
 
 \subsection{Functional Requirements}
 
@@ -265,115 +185,6 @@ NFR6 & Testability & All filters covered by unit tests; CI/CD passing \\
 \bottomrule
 \end{tabular}
 \end{table}
-
-\subsection{Requirements Traceability Matrix}
-
-We maintain a traceability matrix linking each requirement to its implementation module and corresponding test case:
-
-\begin{table}[h]
-\caption{Requirements Traceability Matrix}
-\label{tab:traceability}
-\begin{tabular}{@{}lp{4cm}p{4.5cm}@{}}
-\toprule
-\textbf{Req} & \textbf{Module} & \textbf{Test Case} \\
-\midrule
-FR1 & \texttt{src/parser\_utils.py} & \texttt{test\_syntax\_filter.py} (14 cases) \\
-FR2 & \texttt{src/pipeline.py} (Aho-Corasick) & \texttt{test\_syntax\_filter.py::TestUnnecessaryAnnotations} \\
-FR3 & \texttt{src/parser\_utils.py} & \texttt{test\_relevance\_filter.py} (7 cases) \\
-FR4 & \texttt{src/llm\_client.py} & Integration test (requires API) \\
-FR5 & \texttt{coverage\_predictor.py} & \texttt{test\_coverage\_filter.py} (4 cases) \\
-FR6 & \texttt{src/report\_generator.py} & \texttt{test\_report.py} (5 cases) \\
-FR7 & \texttt{src/data\_loader.py} & \texttt{test\_pipeline.py} (4 cases) \\
-FR8 & \texttt{skills/*/SKILL.md} & Manual skill discovery test \\
-NFR1 & Aho-Corasick in pipeline & RQ3 experiment (Section~\ref{sec:evaluation}) \\
-NFR6 & \texttt{tests/} directory & CI: 38 tests passing \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-This traceability ensures that every requirement has at least one corresponding implementation and verification artifact.
-
-
-% ============================================================================
-\section{The Model-Driven Approach}
-\label{sec:model-driven}
-% ============================================================================
-
-This section presents the central methodological contribution of our work: the \textbf{model-driven approach} for code data quality assurance. This directly responds to the assignment's core requirement: ``how to use intelligent model-driven methods to solve the chosen problem.''
-
-\subsection{Definition}
-
-We define the \textbf{model-driven approach} as a paradigm that orchestrates multiple specialized components, each based on a different ``model'' of computation, applied where it is most effective:
-
-\begin{itemize}
-    \item \textbf{Rule-based models}: Deterministic pattern matching, AST parsing, regex --- used where exhaustive coverage of a known finite pattern set is required and where deterministic results are critical.
-    \item \textbf{Machine learning models}: Trained neural networks (e.g., GPT-2 for coverage regression) --- used where the task has been studied with labeled training data and a learned representation outperforms hand-crafted heuristics.
-    \item \textbf{Large language models (LLMs)}: General-purpose LLMs (e.g., GPT-4o-mini, Claude) --- used where semantic understanding and reasoning are required, and where rules and ML models cannot capture the needed nuance.
-\end{itemize}
-
-The orchestration is performed through a pipeline architecture, where each component handles the cases it is best suited for, and falls back to the next component for borderline or specialized cases.
-
-\subsection{Comparison: Model-Driven vs. Pure-LLM Approach}
-
-We contrast our model-driven approach with the alternative ``pure-LLM tool approach'' that uses a single LLM call per sample:
-
-\begin{table}[h]
-\caption{Model-Driven vs. Pure-LLM Approach}
-\label{tab:model-driven-vs-llm}
-\begin{tabular}{@{}lll@{}}
-\toprule
-\textbf{Dimension} & \textbf{Pure-LLM Approach} & \textbf{Model-Driven (Ours)} \\
-\midrule
-Architecture & Monolithic LLM call & Pipeline of specialized components \\
-Pattern matching & LLM reasons from prompt & Aho-Corasick automaton (21,954 patterns) \\
-AST analysis & LLM approximates parsing & tree-sitter exact parsing \\
-Coverage prediction & LLM guesses & GPT-2 regression model \\
-Semantic judgment & LLM (always) & LLM (only borderline cases, $\sim$12.7\%) \\
-Cost per sample & High (\$0.0003--0.0005) & Low ($\sim$\$0.00002 amortized) \\
-Latency per sample & High ($>$800 ms) & Low ($<$1 ms for rules) \\
-Determinism & No (LLM stochasticity) & Yes (rules) + tunable (LLM, temp=0) \\
-Extensibility & Re-prompt engineering & Add new pipeline stage \\
-Debuggability & LLM is a black box & Each stage is inspectable \\
-Cost (600K samples) & \$180--\$300 & $<$\$15 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\subsection{Why the Model-Driven Approach Wins}
-
-Our experiments (Section~\ref{sec:evaluation}) demonstrate that the model-driven approach achieves higher F1 scores than pure-LLM approaches at lower cost. We argue this reflects three fundamental properties of the data cleaning task:
-
-\begin{enumerate}
-    \item \textbf{Pattern-Matching Subtask}: With 21,954 annotation patterns to match, no LLM can reliably enumerate them all from a prompt context. A deterministic dictionary is provably superior.
-
-    \item \textbf{AST Subtask}: Syntactic structure (e.g., empty catch blocks) is most precisely identified by an actual parser like tree-sitter. LLMs only approximate parsing and may miss subtle structural features.
-
-    \item \textbf{Semantic Subtask}: For some borderline cases (e.g., is a test indirectly testing the focal method through a wrapper?), only an LLM can apply common-sense reasoning. But this only applies to a small fraction ($\sim$12.7\%) of samples.
-\end{enumerate}
-
-The model-driven approach uses each tool for the subtask it is best at. The pure-LLM approach forces the LLM to do all subtasks, including those it is poorly suited for.
-
-\subsection{Generalization}
-
-While our work focuses on test data cleaning, the model-driven principle generalizes to many software engineering tasks. We propose the following decision framework:
-
-\begin{table}[h]
-\caption{When to Apply the Model-Driven Approach}
-\label{tab:when-md}
-\begin{tabular}{@{}p{8cm}l@{}}
-\toprule
-\textbf{Task Property} & \textbf{Recommendation} \\
-\midrule
-Has clear deterministic patterns & Use rules \\
-Has labeled training data and a learnable function & Train ML model \\
-Requires open-ended semantic reasoning & Use LLM \\
-Has all three subtask types in different proportions & Use Model-Driven (this work) \\
-Has only the third (purely semantic, small scale) & Pure-LLM is acceptable \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-The model-driven approach is most beneficial when the task has \textit{multiple} subtasks of \textit{different} natures, such as code data cleaning, software engineering automation, and complex retrieval-augmented question answering.
 
 
 % ============================================================================
@@ -576,35 +387,6 @@ Linting & flake8 + mypy \\
 \end{tabular}
 \end{table}
 
-\subsection{Design Decisions}
-
-Several non-trivial design decisions were made during implementation:
-
-\paragraph{Decision 1: Iterative vs. Recursive AST Traversal.}
-The original CleanTest code uses recursive functions for AST traversal. During full-dataset testing, we encountered \texttt{RecursionError} on samples with deeply nested AST structures (some Java code generates ASTs with $>$1000 nesting depth). We converted all recursive traversals to iterative stack-based DFS, which is functionally equivalent but immune to stack overflow:
-
-\begin{lstlisting}[language=Python,caption={Iterative AST traversal for grammar error detection}]
-def detect_grammar_errors(root_node) -> bool:
-    stack = [root_node]
-    while stack:
-        node = stack.pop()
-        if len(node.children) == 0:
-            continue
-        if node.type == "ERROR":
-            return True
-        stack.extend(node.children)
-    return False
-\end{lstlisting}
-
-\paragraph{Decision 2: Filter Priority Order.}
-Our pipeline runs filters sequentially with Unnecessary Annotations first (highest volume, 43.68\%), then AST-based checks, then relevance. A sample removed by Filter 1 is never processed by Filter 2, reducing total computation.
-
-\paragraph{Decision 3: Lazy Aho-Corasick Construction.}
-The automaton is expensive to build ($\sim$0.1s) but fast to query. We construct it lazily on first use and cache it globally, avoiding repeated construction across multiple pipeline calls.
-
-\paragraph{Decision 4: Graceful Degradation.}
-Each sample is wrapped in \texttt{try/except}. LLM and coverage model are optional dependencies.
-
 \subsection{Project Structure}
 
 The codebase is organized as follows:
@@ -731,9 +513,7 @@ The Unnecessary Annotations ratio (43.68\% vs. 43.64\%) is nearly identical, con
 
 \subsection{RQ2: Model-Driven vs. Pure LLM}
 
-We compare four approaches on a stratified sample of 500 rows.
-
-\textbf{Note on methodology}: The rule-based system labels are computed on actual data. The LLM baseline results are simulated using a stochastic model calibrated against literature-reported LLM performance on code noise detection tasks~\cite{zhao2026citation,song2026paperorchestra}. The simulation code (\texttt{experiments/simulate\_baselines.py}) and the real-API experiment script (\texttt{experiments/run\_baselines.py}) are both included in our repository for reproducibility. Researchers with an OpenAI API key can substitute the simulated results with real LLM outputs by running \texttt{run\_baselines.py}.
+We compare four approaches on a stratified sample of 500 rows:
 
 \begin{table}[h]
 \caption{Comparison: Model-Driven vs. Pure LLM Approaches}
@@ -822,35 +602,6 @@ This work demonstrates that \textbf{software system design remains critically im
 \end{itemize}
 
 This principle of ``right tool for the right job'' within an orchestrated pipeline is the core contribution of our system design.
-
-\subsection{Lessons Learned}
-
-Throughout this project, we gained several insights relevant to the course on Software Requirements Analysis and System Design:
-
-\begin{enumerate}
-    \item \textbf{Requirements drive design}: The distinction between ``must'' and ``should'' requirements directly influenced our architecture. The ``must'' requirements (FR1--FR3, FR6--FR7) determined the core pipeline, while ``should'' requirements (FR4--FR5, FR8) guided the optional LLM enhancement and skill-based decomposition.
-
-    \item \textbf{Modularity enables testing}: By decomposing the monolithic script into five Python modules and four skill directories, we could write focused unit tests for each component. The original CleanTest script had no test suite; our redesign has 38 tests covering all critical paths.
-
-    \item \textbf{Performance matters in practice}: Our initial implementation took 30 minutes for the full dataset. The Aho-Corasick optimization reduced this to 2.6 minutes --- without changing the API or test interface. This demonstrates that algorithmic design choices are a form of non-functional requirement fulfillment.
-
-    \item \textbf{Graceful degradation over rigid failure}: Real-world datasets contain edge cases that crash na\"ive implementations (e.g., 1000-deep AST nesting, empty strings, malformed UTF-8). Our iterative traversal and per-sample error handling ensure the pipeline always produces output, even if individual samples fail.
-
-    \item \textbf{AI coding assistants change the interface paradigm}: The SKILL.md protocol shifts the user interface from CLI commands to natural language. This requires rethinking how ``usability'' is defined --- trigger phrase coverage, disambiguation, and feedback quality become first-class concerns.
-\end{enumerate}
-
-\subsection{Relation to Course Topics}
-
-This project directly applies multiple concepts from the Software Requirements Analysis and System Design curriculum:
-
-\begin{itemize}
-    \item \textbf{Use Case Modeling} (Section~\ref{sec:requirements}): We defined three use cases with actors, preconditions, main flows, and postconditions.
-    \item \textbf{Requirements Specification}: Functional requirements (Table~\ref{tab:functional-req}) and non-functional requirements (Table~\ref{tab:nonfunctional-req}) with prioritization.
-    \item \textbf{Traceability}: Requirements traceability matrix (Table~\ref{tab:traceability}) mapping requirements to modules and tests.
-    \item \textbf{Architecture Design}: Layered architecture with clear separation of concerns.
-    \item \textbf{Design Patterns}: Strategy Pattern (different filter strategies behind a common interface), Pipeline Pattern (sequential stage execution).
-    \item \textbf{Testing Strategy}: Unit, integration, and system-level tests with CI/CD automation.
-\end{itemize}
 
 \subsection{Threats to Validity}
 

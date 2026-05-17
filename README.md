@@ -64,8 +64,62 @@ cp -R skills/* ~/.codebuddy/skills/
 ### 4. Run Tests
 
 ```bash
+# Run all 38 tests with verbose output
+python3 -m pytest tests/ -v --tb=short
+
+# Run with coverage report
+python3 -m pytest tests/ -v --cov=src --cov-report=term-missing
+
+# Run a specific test file
+python3 -m pytest tests/test_syntax_filter.py -v
+
+# Or via Makefile
 make test
 ```
+
+**Expected output:**
+```
+tests/test_coverage_filter.py::TestCoverageFilter::test_removes_low_coverage PASSED
+tests/test_coverage_filter.py::TestCoverageFilter::test_keeps_all_above_threshold PASSED
+... (38 tests)
+============================== 38 passed in 0.74s ==============================
+```
+
+**Test structure:**
+
+| Test File | Cases | What It Tests |
+|-----------|:-----:|---------------|
+| `test_syntax_filter.py` | 14 | All 7 syntax noise types + annotation detection |
+| `test_relevance_filter.py` | 7 | AST method extraction + name overlap calculation |
+| `test_coverage_filter.py` | 4 | Coverage threshold logic + graceful skip |
+| `test_pipeline.py` | 4 | End-to-end integration (noisy + clean fixtures) |
+| `test_report.py` | 5 | JSON/Markdown report generation |
+
+### 5. Run Experiments
+
+```bash
+# Generate rule-based ground truth labels (no API key needed)
+python3 experiments/run_baselines.py \
+  --input_csv path/to/all_train.csv --sample_size 500 --skip_llm
+
+# Run simulated baseline comparison
+python3 experiments/simulate_baselines.py
+
+# Run real LLM baselines (requires OPENAI_API_KEY)
+export OPENAI_API_KEY="sk-..."
+python3 experiments/run_baselines.py \
+  --input_csv path/to/all_train.csv --sample_size 500
+```
+
+## Code Assistant Usage
+
+For detailed instructions on using CleanTest-Agent as Agent Skills in CodeBuddy, Claude Code, or Cursor, see **[docs/code-assistant-guide.md](docs/code-assistant-guide.md)**.
+
+**Quick summary:**
+
+1. Install skills: `make install` (copies to `~/.codebuddy/skills/`)
+2. Restart CodeBuddy
+3. Say: "Help me clean this unit test training dataset" — the assistant auto-invokes the pipeline skill
 
 ## Skill Descriptions
 
