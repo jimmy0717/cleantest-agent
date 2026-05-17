@@ -5,7 +5,8 @@ description: >
   Sequentially invokes syntax-filter, relevance-filter, and coverage-filter skills
   to remove noisy samples, then generates a noise report.
   Triggers: "clean test data", "filter noisy tests", "run cleantest pipeline",
-  "数据清洗", "过滤噪声测试", "运行 CleanTest"
+  "remove noisy samples", "data quality", "clean training data", "unit test cleaning",
+  "数据清洗", "过滤噪声测试", "运行 CleanTest", "清洗训练数据"
 ---
 
 # CleanTest Pipeline Orchestrator
@@ -42,7 +43,7 @@ The input CSV must contain at minimum:
 - `src_fm`: The focal method source code (Java)
 - `target`: The unit test source code (Java)
 
-Optional columns: `src_fm_fc`, `condition_cover_rate`, `line_cover_rate`
+Optional columns: `condition_cover_rate` (enables Filter 3 without model)
 
 ## Output
 
@@ -52,6 +53,8 @@ After all stages complete, generate:
 3. `summary.md` — Human-readable summary
 
 ## Execution
+
+Run from the **project root directory**:
 
 ```bash
 python -m src.pipeline \
@@ -77,3 +80,8 @@ In CLI mode, the pipeline runs all stages automatically. When invoked through a 
 - **Deep AST nesting**: Iterative stack-based traversal (no recursion).
 - **Missing GPU/model**: Coverage filter gracefully skipped with `--skip_coverage`.
 - **Missing API key**: LLM enhancement skipped, falls back to rules only.
+
+## Scripts
+
+- `src/pipeline.py` — Main orchestrator (run via `python -m src.pipeline`)
+- `references/pipeline-schema.json` — JSON Schema for input/output format

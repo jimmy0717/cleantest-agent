@@ -89,7 +89,7 @@ tests/test_coverage_filter.py::TestCoverageFilter::test_keeps_all_above_threshol
 
 | Test File | Cases | What It Tests |
 |-----------|:-----:|---------------|
-| `test_syntax_filter.py` | 14 | All 7 syntax noise types + annotation detection |
+| `test_syntax_filter.py` | 18 | All 7 syntax noise types + annotation detection |
 | `test_relevance_filter.py` | 7 | AST method extraction + name overlap calculation |
 | `test_coverage_filter.py` | 4 | Coverage threshold logic + graceful skip |
 | `test_pipeline.py` | 4 | End-to-end integration (noisy + clean fixtures) |

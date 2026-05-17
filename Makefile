@@ -1,4 +1,4 @@
-.PHONY: test lint install clean help
+.PHONY: test lint install demo clean help
 
 help:  ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
@@ -18,5 +18,9 @@ install:  ## Install skills to ~/.codebuddy/skills/
 	done
 	@echo "All skills installed. Restart CodeBuddy to activate."
 
-clean:  ## Run the full pipeline on sample data
-	python -m src.pipeline --input_csv tests/fixtures/sample_noisy.csv --output_dir ./output --llm_enhance
+demo:  ## Run the pipeline on sample data (no LLM)
+	python -m src.pipeline --input_csv tests/fixtures/sample_noisy.csv --output_dir ./output --skip_coverage
+
+clean:  ## Remove build artifacts and output files
+	rm -rf output/ __pycache__ .pytest_cache .mypy_cache *.egg-info build dist .coverage coverage.xml htmlcov
+	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true

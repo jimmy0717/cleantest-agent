@@ -150,3 +150,24 @@ The assistant will read the corresponding `SKILL.md` and follow its instructions
 ```
 User: "I have a CSV file at data/all_train.csv with unit test training
        data. Please clean it using CleanTest to remove noisy samples."
+
+Assistant: [Invokes cleantest-pipeline skill]
+"I will run the CleanTest-Agent pipeline on your dataset.
+Running Filter 1 (Syntax Noise)... removed 259,427 samples.
+Running Filter 2 (Relevance)... removed 29,458 samples.
+Pipeline complete! 268,492 clean samples saved to output/filtered_data.csv.
+See output/summary.md for the full noise report."
+
+User: "What types of noise were found?"
+
+Assistant: [Reads output/noise_report.json]
+"Here is the breakdown:
+- Unnecessary Annotations: 259,427 (43.68%)
+- No Relevance: 29,458 (4.96%)
+- Syntax Errors: 16,372 (2.76%)
+- Ambiguous Type: 10,335 (1.74%)
+- Synchronized: 5,318 (0.90%)
+- Empty Exception: 2,259 (0.38%)
+- Non-English: 1,479 (0.25%)
+- Empty Method: 813 (0.14%)"
+```

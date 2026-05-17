@@ -1,6 +1,6 @@
 # Noise Rules Reference
 
-This document defines the 7+1 noise types detected by the syntax filter.
+This document defines the 8 noise types detected by the syntax filter (7 AST/regex-based + 1 dictionary-based via Aho-Corasick).
 
 ## N1: Syntax Errors
 

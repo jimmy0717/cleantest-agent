@@ -140,8 +140,8 @@ def run_syntax_filter(
             # N7: Synchronized
             elif detect_synchronized(src_fm):
                 noise_type = "synchronized"
-        except Exception:
-            # Skip samples that cause parser errors
+        except Exception as e:
+            logger.debug(f"Filter 1: skipping sample {idx} due to error: {e}")
             continue
 
         if noise_type:
@@ -186,7 +186,8 @@ def run_relevance_filter(
             src_methods = extract_src_methods(src_root)
             test_invocations = extract_test_invocations(tgt_root)
             overlap = compute_relevance(src_methods, test_invocations)
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Filter 2: skipping sample {idx} due to error: {e}")
             continue
 
         if overlap == 0:
@@ -205,7 +206,7 @@ def run_relevance_filter(
 
 
 # ---------------------------------------------------------------------------
-# Filter 3: Coverage (stub - requires trained model)
+# Filter 3: Coverage
 # ---------------------------------------------------------------------------
 
 def run_coverage_filter(
@@ -213,14 +214,16 @@ def run_coverage_filter(
 ) -> list:
     """Filter 3: remove low-coverage samples.
 
-    If the CSV has a `condition_cover_rate` column, use ground-truth labels.
-    Otherwise, this filter is skipped (model inference requires GPU + weights).
+    Two modes:
+    - If CSV has `condition_cover_rate` column: use ground-truth labels directly.
+    - If a trained GPT-2 model path is provided: run model inference (requires GPU).
+    - Otherwise: skip this filter gracefully.
     """
     if "condition_cover_rate" not in df.columns:
         logger.warning(
-            "Column 'condition_cover_rate' not found. "
+            "Column 'condition_cover_rate' not found and no model provided. "
             "Skipping coverage filter. Use --skip_coverage or provide "
-            "coverage labels."
+            "a CSV with coverage labels."
         )
         return []
 

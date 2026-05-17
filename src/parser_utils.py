@@ -107,21 +107,6 @@ def detect_synchronized(source_code: str) -> bool:
     return "synchronized" in source_code
 
 
-def replace_unnecessary_annotations(
-    source_code: str, noise_modifiers: List[str]
-) -> Tuple[bool, str]:
-    """Remove unnecessary annotations from source code.
-
-    Returns (was_modified, cleaned_code).
-    """
-    modified = False
-    for modifier in noise_modifiers:
-        if modifier in source_code:
-            modified = True
-            source_code = source_code.replace(modifier, "")
-    return modified, source_code
-
-
 # ---------------------------------------------------------------------------
 # Relevance detection (iterative)
 # ---------------------------------------------------------------------------
