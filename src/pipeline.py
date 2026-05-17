@@ -43,36 +43,41 @@ def run_syntax_filter(
     for idx, row in tqdm(
         df.iterrows(), total=len(df), desc="Filter 1: Syntax"
     ):
-        src_fm = str(row["src_fm"])
-        target = str(row["target"])
-        src_root = parse_java(src_fm)
-        tgt_root = parse_java(target)
+        try:
+            src_fm = str(row["src_fm"])
+            target = str(row["target"])
+            src_root = parse_java(src_fm)
+            tgt_root = parse_java(target)
 
-        noise_type = None
+            noise_type = None
 
-        # N4: Ambiguous type
-        if detect_ambiguous_type(src_root):
-            noise_type = "ambiguous_type"
+            # N4: Ambiguous type
+            if detect_ambiguous_type(src_root):
+                noise_type = "ambiguous_type"
 
-        # N1: Syntax errors
-        elif detect_grammar_errors(src_root) or detect_grammar_errors(tgt_root):
-            noise_type = "syntax_error"
+            # N1: Syntax errors
+            elif (detect_grammar_errors(src_root)
+                  or detect_grammar_errors(tgt_root)):
+                noise_type = "syntax_error"
 
-        # N2: Empty exception
-        elif detect_empty_exception(src_root):
-            noise_type = "empty_exception"
+            # N2: Empty exception
+            elif detect_empty_exception(src_root):
+                noise_type = "empty_exception"
 
-        # N3: Empty method
-        elif detect_empty_method(src_root):
-            noise_type = "empty_method"
+            # N3: Empty method
+            elif detect_empty_method(src_root):
+                noise_type = "empty_method"
 
-        # N6: Non-English literals
-        elif detect_non_english(src_fm) or detect_non_english(target):
-            noise_type = "non_english"
+            # N6: Non-English literals
+            elif detect_non_english(src_fm) or detect_non_english(target):
+                noise_type = "non_english"
 
-        # N7: Synchronized
-        elif detect_synchronized(src_fm):
-            noise_type = "synchronized"
+            # N7: Synchronized
+            elif detect_synchronized(src_fm):
+                noise_type = "synchronized"
+        except Exception:
+            # Skip samples that cause parser errors
+            continue
 
         if noise_type:
             # Optional LLM confirmation for borderline cases
@@ -106,15 +111,18 @@ def run_relevance_filter(
     for idx, row in tqdm(
         df.iterrows(), total=len(df), desc="Filter 2: Relevance"
     ):
-        src_fm = str(row["src_fm"])
-        target = str(row["target"])
+        try:
+            src_fm = str(row["src_fm"])
+            target = str(row["target"])
 
-        src_root = parse_java(src_fm)
-        tgt_root = parse_java(target)
+            src_root = parse_java(src_fm)
+            tgt_root = parse_java(target)
 
-        src_methods = extract_src_methods(src_root)
-        test_invocations = extract_test_invocations(tgt_root)
-        overlap = compute_relevance(src_methods, test_invocations)
+            src_methods = extract_src_methods(src_root)
+            test_invocations = extract_test_invocations(tgt_root)
+            overlap = compute_relevance(src_methods, test_invocations)
+        except Exception:
+            continue
 
         if overlap == 0:
             # Stage B: LLM semantic judgment

@@ -1,0 +1,17 @@
+{
+  "total_samples": 593953,
+  "removed_samples": 114084,
+  "kept_samples": 479869,
+  "breakdown": {
+    "syntax_error": 24838,
+    "empty_method": 1901,
+    "ambiguous_type": 17511,
+    "synchronized": 9307,
+    "empty_exception": 3660,
+    "non_english": 3130,
+    "no_relevance": 53737
+  },
+  "llm_calls": 0,
+  "llm_overrides": 0,
+  "removal_rate": "19.21%"
+}

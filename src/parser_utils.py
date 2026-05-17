@@ -1,4 +1,8 @@
-"""Tree-sitter based Java AST parsing utilities."""
+"""Tree-sitter based Java AST parsing utilities.
+
+All AST traversals use iterative stack-based DFS to avoid RecursionError
+on deeply nested code.
+"""
 
 import re
 from typing import List, Tuple
@@ -23,56 +27,71 @@ def parse_java(code: str):
 
 
 # ---------------------------------------------------------------------------
-# Noise detection functions (from CleanTest run_tgct_rule.py)
+# Noise detection functions (iterative, stack-based)
 # ---------------------------------------------------------------------------
 
 def detect_grammar_errors(root_node) -> bool:
-    """Check if the AST contains ERROR nodes (syntax errors)."""
-    if len(root_node.children) == 0 or root_node.type == "string":
-        return False
-    if root_node.type == "method_declaration":
-        child_types = [c.type for c in root_node.children]
-        if "block" not in child_types:
+    """Check if the AST contains ERROR nodes or method_declarations without block."""
+    stack = [root_node]
+    while stack:
+        node = stack.pop()
+        if len(node.children) == 0 or node.type == "string":
+            continue
+        if node.type == "ERROR":
             return True
-    if root_node.type == "ERROR":
-        return True
-    return any(detect_grammar_errors(c) for c in root_node.children)
+        if node.type == "method_declaration":
+            child_types = [c.type for c in node.children]
+            if "block" not in child_types:
+                return True
+        stack.extend(node.children)
+    return False
 
 
 def detect_empty_exception(root_node) -> bool:
     """Check if code has empty catch/finally blocks."""
-    if len(root_node.children) == 0 or root_node.type == "string":
-        return False
-    if root_node.type in ("catch_clause", "finally_clause"):
-        for child in root_node.children:
-            if child.type == "block" and len(child.children) < 3:
-                return True
-    return any(detect_empty_exception(c) for c in root_node.children)
+    stack = [root_node]
+    while stack:
+        node = stack.pop()
+        if len(node.children) == 0 or node.type == "string":
+            continue
+        if node.type in ("catch_clause", "finally_clause"):
+            for child in node.children:
+                if child.type == "block" and len(child.children) < 3:
+                    return True
+        stack.extend(node.children)
+    return False
 
 
 def detect_empty_method(root_node) -> bool:
     """Check if code has methods with empty bodies."""
-    if len(root_node.children) == 0 or root_node.type == "string":
-        return False
-    if root_node.type == "method_declaration":
-        for child in root_node.children:
-            if child.type == "block" and len(child.children) < 3:
-                return True
-    return any(detect_empty_method(c) for c in root_node.children)
+    stack = [root_node]
+    while stack:
+        node = stack.pop()
+        if len(node.children) == 0 or node.type == "string":
+            continue
+        if node.type == "method_declaration":
+            for child in node.children:
+                if child.type == "block" and len(child.children) < 3:
+                    return True
+        stack.extend(node.children)
+    return False
 
 
 def detect_ambiguous_type(root_node) -> bool:
     """Check if method uses generics without type bounds (extends)."""
-    if len(root_node.children) == 0 or root_node.type == "string":
-        return False
-    if root_node.type == "method_declaration":
-        for child in root_node.children:
-            text = child.text.decode("utf-8")
-            if (child.type == "type_parameters"
-                    and "<" in text and ">" in text
-                    and "extends" not in text):
-                return True
-    return any(detect_ambiguous_type(c) for c in root_node.children)
+    stack = [root_node]
+    while stack:
+        node = stack.pop()
+        if len(node.children) == 0 or node.type == "string":
+            continue
+        if node.type == "method_declaration":
+            for child in node.children:
+                if child.type == "type_parameters":
+                    text = child.text.decode("utf-8")
+                    if "<" in text and ">" in text and "extends" not in text:
+                        return True
+        stack.extend(node.children)
+    return False
 
 
 def detect_non_english(source_code: str) -> bool:
@@ -104,61 +123,57 @@ def replace_unnecessary_annotations(
 
 
 # ---------------------------------------------------------------------------
-# Relevance detection
+# Relevance detection (iterative)
 # ---------------------------------------------------------------------------
 
 def extract_src_methods(root_node) -> List[Tuple[str, int]]:
     """Extract (method_name, param_count) from focal method declarations."""
     methods: List[Tuple[str, int]] = []
-    _walk_src_methods(root_node, methods)
+    stack = [root_node]
+    while stack:
+        node = stack.pop()
+        if len(node.children) == 0 or node.type == "string":
+            continue
+        if node.type == "method_declaration":
+            name = ""
+            num_params = 0
+            for child in node.children:
+                if child.type == "identifier":
+                    name = child.text.decode("utf-8")
+                if child.type == "formal_parameters":
+                    num_params = sum(
+                        1 for c in child.children
+                        if c.type == "formal_parameter"
+                    )
+            if name:
+                methods.append((name, num_params))
+        stack.extend(node.children)
     return methods
-
-
-def _walk_src_methods(node, methods: List[Tuple[str, int]]):
-    if len(node.children) == 0 or node.type == "string":
-        return
-    if node.type == "method_declaration":
-        name = ""
-        num_params = 0
-        for child in node.children:
-            if child.type == "identifier":
-                name = child.text.decode("utf-8")
-            if child.type == "formal_parameters":
-                num_params = sum(
-                    1 for c in child.children if c.type == "formal_parameter"
-                )
-        if name:
-            methods.append((name, num_params))
-    for child in node.children:
-        _walk_src_methods(child, methods)
 
 
 def extract_test_invocations(root_node) -> List[Tuple[str, int]]:
     """Extract (invoked_method_name, arg_count) from test method invocations."""
     invocations: List[Tuple[str, int]] = []
-    _walk_test_invocations(root_node, invocations)
+    stack = [root_node]
+    while stack:
+        node = stack.pop()
+        if len(node.children) == 0 or node.type == "string":
+            continue
+        if node.type == "method_invocation":
+            name = ""
+            num_args = 0
+            for child in node.children:
+                if child.type == "identifier":
+                    name = child.text.decode("utf-8")
+                if child.type == "argument_list":
+                    num_args = sum(
+                        1 for c in child.children
+                        if c.type not in (",", "(", ")")
+                    )
+            if name:
+                invocations.append((name, num_args))
+        stack.extend(node.children)
     return invocations
-
-
-def _walk_test_invocations(node, invocations: List[Tuple[str, int]]):
-    if len(node.children) == 0 or node.type == "string":
-        return
-    if node.type == "method_invocation":
-        name = ""
-        num_args = 0
-        for child in node.children:
-            if child.type == "identifier":
-                name = child.text.decode("utf-8")
-            if child.type == "argument_list":
-                # count non-comma, non-paren children
-                num_args = sum(
-                    1 for c in child.children
-                    if c.type not in (",", "(", ")")
-                )
-        if name:
-            invocations.append((name, num_args))
-    for child in node.children:
-        _walk_test_invocations(child, invocations)
 
 
 def compute_relevance(
