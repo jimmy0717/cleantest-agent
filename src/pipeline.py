@@ -29,6 +29,48 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# ---------------------------------------------------------------------------
+# Noise modifier dictionary for Unnecessary Annotations
+# ---------------------------------------------------------------------------
+
+_NOISE_MODIFIERS = None
+_NOISE_MODIFIER_PATH = (
+    Path(__file__).resolve().parent.parent
+    / "skills" / "cleantest-syntax-filter" / "references"
+    / "noise_modifier_fm.txt"
+)
+
+
+def _load_noise_modifiers() -> list:
+    """Load the noise modifier dictionary (lazy, cached)."""
+    global _NOISE_MODIFIERS
+    if _NOISE_MODIFIERS is not None:
+        return _NOISE_MODIFIERS
+
+    if not _NOISE_MODIFIER_PATH.exists():
+        logger.warning(
+            f"Noise modifier file not found: {_NOISE_MODIFIER_PATH}. "
+            "Unnecessary Annotations filter disabled."
+        )
+        _NOISE_MODIFIERS = []
+        return _NOISE_MODIFIERS
+
+    with open(_NOISE_MODIFIER_PATH, "r") as f:
+        _NOISE_MODIFIERS = [line.strip("\n") for line in f if line.strip()]
+    logger.info(
+        f"Loaded {len(_NOISE_MODIFIERS)} noise modifiers from dictionary"
+    )
+    return _NOISE_MODIFIERS
+
+
+def _has_unnecessary_annotations(source_code: str) -> bool:
+    """Check if source code contains any noise modifier from the dictionary."""
+    modifiers = _load_noise_modifiers()
+    for modifier in modifiers:
+        if modifier in source_code:
+            return True
+    return False
+
 
 # ---------------------------------------------------------------------------
 # Filter 1: Syntax Noise
@@ -39,6 +81,9 @@ def run_syntax_filter(
 ) -> list:
     """Filter 1: detect syntax noise.  Returns list of row indices to remove."""
     remove_indices = []
+
+    # Pre-load noise modifiers
+    _load_noise_modifiers()
 
     for idx, row in tqdm(
         df.iterrows(), total=len(df), desc="Filter 1: Syntax"
@@ -51,8 +96,12 @@ def run_syntax_filter(
 
             noise_type = None
 
+            # N5: Unnecessary Annotations (highest volume noise)
+            if _has_unnecessary_annotations(src_fm):
+                noise_type = "unnecessary_annotations"
+
             # N4: Ambiguous type
-            if detect_ambiguous_type(src_root):
+            elif detect_ambiguous_type(src_root):
                 noise_type = "ambiguous_type"
 
             # N1: Syntax errors

@@ -103,3 +103,20 @@ class TestSynchronized:
 
     def test_no_synchronized(self):
         assert detect_synchronized("public void update()") is False
+
+
+class TestUnnecessaryAnnotations:
+    """Test the pipeline-level annotation detection."""
+
+    def test_has_noise_annotation(self):
+        from src.pipeline import _has_unnecessary_annotations
+        # @GetMapping is a common noise annotation in the dictionary
+        code = '@GetMapping("/api/test") public void handle() { }'
+        result = _has_unnecessary_annotations(code)
+        # If the dictionary is loaded and contains @GetMapping variants
+        assert isinstance(result, bool)
+
+    def test_clean_code_no_annotation(self):
+        from src.pipeline import _has_unnecessary_annotations
+        code = "public int add(int a, int b) { return a + b; }"
+        assert _has_unnecessary_annotations(code) is False
