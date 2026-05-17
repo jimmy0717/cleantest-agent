@@ -11,8 +11,8 @@
 \usepackage{tikz}
 \usetikzlibrary{shapes,arrows,positioning,fit}
 
-stset{
-  basicstyle=tfamily\small,
+\lstset{
+  basicstyle=\ttfamily\small,
   breaklines=true,
   frame=single,
   language=Java,
@@ -20,36 +20,37 @@ stset{
   commentstyle=\color{gray},
   stringstyle=\color{red},
   numbers=left,
-  numberstyle=iny,
+  numberstyle=\tiny,
   tabsize=2,
 }
 
 \settopmatter{printacmref=false}
-enewcommandootnotetextcopyrightpermission[1]{}
+\renewcommand\footnotetextcopyrightpermission[1]{}
 \pagestyle{plain}
 
 \begin{document}
 
-itle{CleanTest-Agent: A Multi-Agent Skill-Orchestrated System for Unit Test Training Data Quality Assurance}
+\title{CleanTest-Agent: A Multi-Agent Skill-Orchestrated System for Unit Test Training Data Quality Assurance}
 
-uthor{[Your Name]}
-ffiliation{
-  nstitution{Beihang University}
+\author{[Your Name]}
+\affiliation{
+  \institution{Beihang University}
   \department{School of Software}
   \city{Beijing}
   \country{China}
 }
-mail{[your-email]@buaa.edu.cn}
+\email{[your-email]@buaa.edu.cn}
 
 \begin{abstract}
 The quality of training data significantly impacts the performance of AI-based unit test generation models. Recent studies have shown that up to 43.52\% of widely-used training datasets contain noisy samples, including syntax errors, irrelevant test-focal method pairs, and low-coverage tests. While the CleanTest framework (FSE 2025 Distinguished Paper) proposed effective rule-based filtering, its implementation exists as monolithic Python scripts that are difficult to integrate into modern AI-assisted development workflows.
 
-In this paper, we present extbf{CleanTest-Agent}, a multi-agent skill-orchestrated system that transforms the CleanTest data cleaning pipeline into composable, reusable extit{Agent Skills} compatible with coding assistants such as CodeBuddy, Claude Code, and Cursor. Our system employs a three-stage pipeline: (1)~a syntax noise filter using tree-sitter AST parsing with Aho-Corasick multi-pattern matching, (2)~a relevance filter combining AST-based method name matching with LLM semantic judgment for borderline cases, and (3)~a coverage prediction filter using a fine-tuned GPT-2 regression model.
+In this paper, we present \textbf{CleanTest-Agent}, a multi-agent skill-orchestrated system that transforms the CleanTest data cleaning pipeline into composable, reusable \textit{Agent Skills} compatible with coding assistants such as CodeBuddy, Claude Code, and Cursor. Our system employs a three-stage pipeline: (1)~a syntax noise filter using tree-sitter AST parsing with Aho-Corasick multi-pattern matching, (2)~a relevance filter combining AST-based method name matching with LLM semantic judgment for borderline cases, and (3)~a coverage prediction filter using a fine-tuned GPT-2 regression model.
 
-We evaluate CleanTest-Agent on the full Methods2Test dataset (593,953 samples) and compare four approaches: rule-based only, pure LLM zero-shot, pure LLM few-shot, and our hybrid method. Results show that our system achieves an F1 score of 0.965 while the best pure LLM approach (few-shot) only achieves 0.789. Furthermore, our hybrid approach costs only \$0.01 per 500 samples compared to \$0.25 for the few-shot baseline --- a 25$imes$ cost reduction. The full pipeline processes 593,953 samples in under 3 minutes with Aho-Corasick optimization (11.5$imes$ speedup over na\"ive string matching). These results demonstrate that systematic software design --- combining rule-based analysis with selective LLM enhancement --- outperforms pure LLM approaches in specialized code analysis tasks.
-nd{abstract}
+We evaluate CleanTest-Agent on the full Methods2Test dataset (593,953 samples) and compare four approaches: rule-based only, pure LLM zero-shot, pure LLM few-shot, and our hybrid method. Results show that our system achieves an F1 score of 0.965 while the best pure LLM approach (few-shot) only achieves 0.789. Furthermore, our hybrid approach costs only \$0.01 per 500 samples compared to \$0.25 for the few-shot baseline --- a 25$\times$ cost reduction. The full pipeline processes 593,953 samples in under 3 minutes with Aho-Corasick optimization (11.5$\times$ speedup over na\"ive string matching). These results demonstrate that systematic software design --- combining rule-based analysis with selective LLM enhancement --- outperforms pure LLM approaches in specialized code analysis tasks.
+\end{abstract}
 
-%% CCS Classification (required by ACM for papers > 2 pages)
+\keywords{unit test generation, data quality, multi-agent systems, code analysis, LLM, software engineering}
+
 \begin{CCSXML}
 <ccs2012>
    <concept>
@@ -58,78 +59,70 @@ nd{abstract}
        <concept_significance>500</concept_significance>
    </concept>
    <concept>
-       <concept_id>10011007.10011006.10011039</concept_id>
-       <concept_desc>Software and its engineering~Software maintenance tools</concept_desc>
-       <concept_significance>300</concept_significance>
-   </concept>
-   <concept>
        <concept_id>10010147.10010178.10010187</concept_id>
        <concept_desc>Computing methodologies~Multi-agent systems</concept_desc>
        <concept_significance>300</concept_significance>
    </concept>
 </ccs2012>
-nd{CCSXML}
+\end{CCSXML}
 
 \ccsdesc[500]{Software and its engineering~Software testing and debugging}
-\ccsdesc[300]{Software and its engineering~Software maintenance tools}
 \ccsdesc[300]{Computing methodologies~Multi-agent systems}
 
-\keywords{unit test generation, data quality, multi-agent systems, code analysis, LLM, software engineering}
+\maketitle
 
-aketitle
-
-ableofcontents
-ewpage
+\tableofcontents
+\newpage
 
 % ============================================================================
 \section{Introduction}
-abel{sec:introduction}
+\label{sec:introduction}
 % ============================================================================
 
 The advent of large language models (LLMs) has significantly advanced automated unit test generation, with models such as CodeBERT~\cite{feng2020codebert}, CodeT5~\cite{wang2021codet5}, StarCoder~\cite{li2023starcoder}, and CodeLlama~\cite{roziere2023code} showing strong capabilities in generating test cases from focal methods. These models are typically fine-tuned on large-scale datasets like Methods2Test~\cite{tufano2022methods2test} and ATLAS~\cite{watson2020atlas}, which contain hundreds of thousands of focal method--test case pairs extracted from open-source Java projects.
 
-However, the quality of these training datasets has been largely overlooked. Zhang et al.~\cite{zhang2025cleantest} recently conducted a detailed study revealing that extbf{43.52\% of the Methods2Test dataset contains noisy samples} --- a finding that earned the FSE 2025 Distinguished Paper Award. These noise types include syntax errors, empty exception handlers, empty method bodies, ambiguous generic types, unnecessary Java annotations, non-English literals, and test cases that are semantically irrelevant to their paired focal methods. Training on such noisy data degrades model performance across all evaluation metrics.
+However, the quality of these training datasets has been largely overlooked. Zhang et al.~\cite{zhang2025cleantest} recently conducted a detailed study revealing that \textbf{43.52\% of the Methods2Test dataset contains noisy samples} --- a finding that earned the FSE 2025 Distinguished Paper Award. These noise types include syntax errors, empty exception handlers, empty method bodies, ambiguous generic types, unnecessary Java annotations, non-English literals, and test cases that are semantically irrelevant to their paired focal methods. Training on such noisy data degrades model performance across all evaluation metrics.
 
 The CleanTest framework proposed by Zhang et al. provides an effective three-filter pipeline: a rule-based syntax filter, a relevance filter, and a GPT-2-based coverage prediction filter. However, the original implementation exists as standalone Python scripts that are tightly coupled to specific file paths and data formats. This monolithic design presents several challenges:
 
 \begin{enumerate}
-    tem extbf{Poor reusability}: The scripts cannot be easily invoked by AI coding assistants or integrated into automated workflows.
-    tem extbf{Limited extensibility}: Adding new noise types requires modifying core scripts rather than composing new modules.
-    tem extbf{No interactive feedback}: Users cannot inspect intermediate results or adjust filtering thresholds during execution.
-    tem extbf{Performance bottlenecks}: The original annotation matching uses linear scan over 21,954 patterns, making it prohibitively slow for large datasets.
-nd{enumerate}
+    \item \textbf{Poor reusability}: The scripts cannot be easily invoked by AI coding assistants or integrated into automated workflows.
+    \item \textbf{Limited extensibility}: Adding new noise types requires modifying core scripts rather than composing new modules.
+    \item \textbf{No interactive feedback}: Users cannot inspect intermediate results or adjust filtering thresholds during execution.
+    \item \textbf{Performance bottlenecks}: The original annotation matching uses linear scan over 21,954 patterns, making it prohibitively slow for large datasets.
+\end{enumerate}
 
-In this paper, we present extbf{CleanTest-Agent}, a system that addresses these challenges through a multi-agent skill-orchestrated architecture. Our key contributions are:
+In this paper, we present \textbf{CleanTest-Agent}, a system that addresses these challenges through a multi-agent skill-orchestrated architecture. Our key contributions are:
 
 \begin{enumerate}
-    tem extbf{Skill-based architecture}: We decompose the CleanTest pipeline into four composable Agent Skills (pipeline orchestrator, syntax filter, relevance filter, coverage filter), each following the standard exttt{SKILL.md} protocol compatible with multiple coding assistants.
+    \item \textbf{Skill-based architecture}: We decompose the CleanTest pipeline into four composable Agent Skills (pipeline orchestrator, syntax filter, relevance filter, coverage filter), each following the standard \texttt{SKILL.md} protocol compatible with multiple coding assistants.
 
-    tem extbf{Hybrid rule-LLM approach}: We enhance the rule-based filters with selective LLM consultation for borderline cases, achieving higher accuracy while keeping costs minimal (only $\sim$12.7\% of samples require LLM calls).
+    \item \textbf{Hybrid rule-LLM approach}: We enhance the rule-based filters with selective LLM consultation for borderline cases, achieving higher accuracy while keeping costs minimal (only $\sim$12.7\% of samples require LLM calls).
 
-    tem extbf{Aho-Corasick optimization}: We replace the na\"ive linear annotation matching with an Aho-Corasick automaton, achieving an extbf{11.5$imes$ speedup} (30 minutes $o$ 2.6 minutes on 593,953 samples).
+    \item \textbf{Aho-Corasick optimization}: We replace the na\"ive linear annotation matching with an Aho-Corasick automaton, achieving an \textbf{11.5$\times$ speedup} (30 minutes $\to$ 2.6 minutes on 593,953 samples).
 
-    tem extbf{Empirical evaluation}: We compare four approaches (rule-based, zero-shot LLM, few-shot LLM, hybrid) and demonstrate that our hybrid approach achieves the best F1 (0.965) at the lowest cost (\$0.01/500 samples).
-nd{enumerate}
+    \item \textbf{Empirical evaluation}: We compare four approaches (rule-based, zero-shot LLM, few-shot LLM, hybrid) and demonstrate that our hybrid approach achieves the best F1 (0.965) at the lowest cost (\$0.01/500 samples).
+\end{enumerate}
 
-The remainder of this paper is organized as follows. Section~ef{sec:background} reviews related work on unit test generation, data quality, LLM-based code analysis, and agent skill architectures. Section~ef{sec:requirements} presents a requirements analysis including stakeholder analysis, use cases, functional and non-functional requirements, and a traceability matrix. Section~ef{sec:model-driven} defines the model-driven approach and contrasts it with the pure-LLM approach. Section~ef{sec:design} details the system design including architecture, filter specifications, and the pipeline algorithm. Section~ef{sec:implementation} covers the implementation with technology choices, design decisions, and testing strategy. Section~ef{sec:evaluation} presents the experimental evaluation through four research questions, including a case study on real samples and an ablation study. Section~ef{sec:discussion} discusses findings, lessons learned, connections to course topics, and threats to validity. Section~ef{sec:conclusion} concludes the paper and outlines future work directions. Appendices provide LLM prompt templates, CI/CD configuration, the full noise report, noise type examples with real Java code, a complete API reference, and skill directory structure documentation.
+The remainder of this paper is organized as follows. Section~\ref{sec:background} reviews related work on unit test generation, data quality, LLM-based code analysis, and agent skill architectures. Section~\ref{sec:requirements} presents a requirements analysis including stakeholder analysis, use cases, functional and non-functional requirements, and a traceability matrix. Section~\ref{sec:model-driven} defines the model-driven approach and contrasts it with the pure-LLM approach. Section~\ref{sec:design} details the system design including architecture, filter specifications, and the pipeline algorithm. Section~\ref{sec:implementation} covers the implementation with technology choices, design decisions, and testing strategy. Section~\ref{sec:evaluation} presents the experimental evaluation through four research questions, including a case study on real samples and an ablation study. Section~\ref{sec:discussion} discusses findings, lessons learned, connections to course topics, and threats to validity. Section~\ref{sec:conclusion} concludes the paper and outlines future work directions. Appendices provide LLM prompt templates, CI/CD configuration, the full noise report, noise type examples with real Java code, a complete API reference, and skill directory structure documentation.
 
 \subsection{Scope and Context}
 
-This work was conducted as the final project for the extit{Software Requirements Analysis and System Design} course at the School of Software, Beihang University. The project requirements specify:
+This work was conducted as the final project for the \textit{Software Requirements Analysis and System Design} course at the School of Software, Beihang University. The project requirements specify:
 \begin{itemize}
-    tem A research report of at least 50 pages in English (ACM/IEEE template).
-    tem A 10-page presentation for a 3-minute in-class talk.
-    tem A reproducible, testable codebase with CI/CD.
-    tem Use of an intelligent model-driven method with experimental comparison against pure-LLM approaches.
-    tem If using a Code Assistant, submission of plugin or skills-level usage documentation.
-nd{itemize}
+    \item A research report of at least 50 pages in English (ACM/IEEE template).
+    \item A 10-page presentation for a 3-minute in-class talk.
+    \item A reproducible, testable codebase with CI/CD.
+    \item Use of an intelligent model-driven method with experimental comparison against pure-LLM approaches.
+    \item If using a Code Assistant, submission of plugin or skills-level usage documentation.
+\end{itemize}
 
 CleanTest-Agent fulfills all of these requirements: it applies software requirements analysis and system design principles to a real-world problem, implements a model-driven approach with Agent Skills, provides experimental evaluation, and includes 38 test cases with GitHub Actions CI/CD.
 
 
 % ============================================================================
 \section{Background and Related Work}
-abel{sec:background}
+\label{sec:background}
 % ============================================================================
 
 \subsection{Unit Test Generation}
@@ -138,31 +131,31 @@ Automated unit test generation has been one of the most active research areas in
 
 \subsubsection{Search-Based Test Generation}
 
-The first generation of automated test generation tools relied on metaheuristic search algorithms. extbf{EvoSuite}~\cite{fraser2011evosuite} is the most widely-used search-based test generation tool for Java. It employs a genetic algorithm to evolve whole test suites that maximize structural coverage criteria such as branch coverage, line coverage, and mutation score. EvoSuite generates JUnit test classes with assertions derived from runtime observations. While effective for achieving high coverage (often 70--80\% branch coverage on real-world projects), EvoSuite-generated tests are frequently criticized for being ``unnatural'' --- they contain long sequences of API calls with minimal readability, making them difficult for developers to understand and maintain.
+The first generation of automated test generation tools relied on metaheuristic search algorithms. \textbf{EvoSuite}~\cite{fraser2011evosuite} is the most widely-used search-based test generation tool for Java. It employs a genetic algorithm to evolve whole test suites that maximize structural coverage criteria such as branch coverage, line coverage, and mutation score. EvoSuite generates JUnit test classes with assertions derived from runtime observations. While effective for achieving high coverage (often 70--80\% branch coverage on real-world projects), EvoSuite-generated tests are frequently criticized for being ``unnatural'' --- they contain long sequences of API calls with minimal readability, making them difficult for developers to understand and maintain.
 
-extbf{Randoop}~\cite{pacheco2007randoop} takes a different approach: feedback-directed random testing. It generates random sequences of method calls, using runtime feedback to prune invalid sequences and retain those that extend coverage. Randoop is fast but produces even less readable tests than EvoSuite, and its assertion quality is limited to basic regression checks (e.g., exttt{assertEquals} on return values observed during generation).
+\textbf{Randoop}~\cite{pacheco2007randoop} takes a different approach: feedback-directed random testing. It generates random sequences of method calls, using runtime feedback to prune invalid sequences and retain those that extend coverage. Randoop is fast but produces even less readable tests than EvoSuite, and its assertion quality is limited to basic regression checks (e.g., \texttt{assertEquals} on return values observed during generation).
 
 \subsubsection{Symbolic Execution-Based Approaches}
 
-Tools like extbf{Pex}~\cite{tillmann2008pex} (for .NET) and extbf{KLEE}~\cite{cadar2008klee} (for C) use symbolic execution to systematically explore program paths. By treating inputs as symbolic variables and solving path constraints with SMT solvers, these tools can achieve near-perfect coverage on small to medium-sized programs. However, symbolic execution suffers from the extit{path explosion problem} in complex programs with loops, recursion, or complex data structures, limiting its practical applicability to real-world Java projects.
+Tools like \textbf{Pex}~\cite{tillmann2008pex} (for .NET) and \textbf{KLEE}~\cite{cadar2008klee} (for C) use symbolic execution to systematically explore program paths. By treating inputs as symbolic variables and solving path constraints with SMT solvers, these tools can achieve near-perfect coverage on small to medium-sized programs. However, symbolic execution suffers from the \textit{path explosion problem} in complex programs with loops, recursion, or complex data structures, limiting its practical applicability to real-world Java projects.
 
 \subsubsection{Neural Test Generation}
 
-The third generation leverages deep learning models trained on large corpora of human-written tests. extbf{AthenaTest}~\cite{tufano2022athenatest} was among the first to apply transformer architectures to test case generation, demonstrating that sequence-to-sequence models can learn to generate syntactically correct and semantically meaningful test methods from focal methods.
+The third generation leverages deep learning models trained on large corpora of human-written tests. \textbf{AthenaTest}~\cite{tufano2022athenatest} was among the first to apply transformer architectures to test case generation, demonstrating that sequence-to-sequence models can learn to generate syntactically correct and semantically meaningful test methods from focal methods.
 
-extbf{Methods2Test}~\cite{tufano2022methods2test} introduced the largest publicly available dataset for this task: 780,242 Java focal method--test case pairs extracted from 91,385 GitHub repositories. The dataset maps each test method to its corresponding focal method using heuristics based on naming conventions and call graphs. Tufano et al. showed that transformer models fine-tuned on Methods2Test can generate test cases that compile and pass at non-trivial rates. However, the paper did not examine the quality of the training data itself.
+\textbf{Methods2Test}~\cite{tufano2022methods2test} introduced the largest publicly available dataset for this task: 780,242 Java focal method--test case pairs extracted from 91,385 GitHub repositories. The dataset maps each test method to its corresponding focal method using heuristics based on naming conventions and call graphs. Tufano et al. showed that transformer models fine-tuned on Methods2Test can generate test cases that compile and pass at non-trivial rates. However, the paper did not examine the quality of the training data itself.
 
-extbf{ATLAS}~\cite{watson2020atlas} focused specifically on test oracle generation --- the assertion portion of test cases. Watson et al. constructed a dataset of 170K assert statements and trained models to predict assertions given test prefixes and focal methods. ATLAS demonstrated that even the assertion component can be learned from data, but again did not address data noise.
+\textbf{ATLAS}~\cite{watson2020atlas} focused specifically on test oracle generation --- the assertion portion of test cases. Watson et al. constructed a dataset of 170K assert statements and trained models to predict assertions given test prefixes and focal methods. ATLAS demonstrated that even the assertion component can be learned from data, but again did not address data noise.
 
-extbf{A3Test}~\cite{alagarsamy2023a3test} introduced domain adaptation techniques to improve test generation across different project styles. extbf{ChatUniTest}~\cite{chen2024chatunitest} was among the first to leverage ChatGPT for test generation, using adaptive focal context and iterative refinement to improve compilation rates.
+\textbf{A3Test}~\cite{alagarsamy2023a3test} introduced domain adaptation techniques to improve test generation across different project styles. \textbf{ChatUniTest}~\cite{chen2024chatunitest} was among the first to leverage ChatGPT for test generation, using adaptive focal context and iterative refinement to improve compilation rates.
 
 \subsubsection{LLM-Powered Test Generation}
 
 The latest generation uses instruction-tuned LLMs such as GPT-4, StarCoder~\cite{li2023starcoder}, and CodeLlama~\cite{roziere2023code} for zero-shot or few-shot test generation. These models can generate readable, well-structured tests without task-specific fine-tuning. However, they still benefit significantly from fine-tuning on domain-specific data --- and the quality of that data is precisely the focus of CleanTest and our work.
 
-Tools like extbf{Pynguin}~\cite{lukasczyk2022pynguin} for Python combine traditional search-based strategies with LLM-guided generation. extbf{CodaMosa} combines MOSA (a multi-objective search algorithm) with LLM suggestions for hard-to-cover branches.
+Tools like \textbf{Pynguin}~\cite{lukasczyk2022pynguin} for Python combine traditional search-based strategies with LLM-guided generation. \textbf{CodaMosa} combines MOSA (a multi-objective search algorithm) with LLM suggestions for hard-to-cover branches.
 
-The common thread across all four generations is that extbf{the quality of training data directly affects model performance}. If 43.52\% of the training data is noisy, even the most sophisticated model architecture cannot fully compensate.
+The common thread across all four generations is that \textbf{the quality of training data directly affects model performance}. If 43.52\% of the training data is noisy, even the most sophisticated model architecture cannot fully compensate.
 
 \subsection{Data Quality in Software Engineering}
 
@@ -170,31 +163,31 @@ Data quality has emerged as a critical concern across all applications of machin
 
 \subsubsection{Code Duplication and Data Leakage}
 
-Allamanis~\cite{allamanis2019adverse} conducted an influential study on the adverse effects of code duplication in machine learning models of code. Using the popular extit{java-small}, extit{java-med}, and extit{java-large} benchmarks, Allamanis showed that near-duplicate files between training and test sets inflate evaluation metrics by 10--100\%, depending on the task. This work led to the standard practice of deduplication in dataset construction --- a practice we also apply as the first step in our pipeline.
+Allamanis~\cite{allamanis2019adverse} conducted an influential study on the adverse effects of code duplication in machine learning models of code. Using the popular \textit{java-small}, \textit{java-med}, and \textit{java-large} benchmarks, Allamanis showed that near-duplicate files between training and test sets inflate evaluation metrics by 10--100\%, depending on the task. This work led to the standard practice of deduplication in dataset construction --- a practice we also apply as the first step in our pipeline.
 
 \subsubsection{Code Naturalness and Distribution}
 
-Hindle et al.~\cite{hindle2016naturalness} introduced the extit{naturalness hypothesis}: software is repetitive and predictable, similar to natural language. Tu et al.~\cite{tu2014localness} extended this by showing that code naturalness varies significantly across projects, suggesting that training data should be carefully curated to represent the target distribution. Non-English comments and culturally-specific coding styles (one of CleanTest's noise categories) can skew the distribution.
+Hindle et al.~\cite{hindle2016naturalness} introduced the \textit{naturalness hypothesis}: software is repetitive and predictable, similar to natural language. Tu et al.~\cite{tu2014localness} extended this by showing that code naturalness varies significantly across projects, suggesting that training data should be carefully curated to represent the target distribution. Non-English comments and culturally-specific coding styles (one of CleanTest's noise categories) can skew the distribution.
 
 \subsubsection{CleanTest: Data Quality for Unit Test Generation}
 
-extbf{CleanTest}~\cite{zhang2025cleantest} is the most comprehensive study of data quality specifically for unit test generation. Zhang et al. (Zhejiang University, Huawei, and Singapore Management University) conducted both quantitative analysis and qualitative interviews with 17 professional developers to characterize noise in test training data.
+\textbf{CleanTest}~\cite{zhang2025cleantest} is the most comprehensive study of data quality specifically for unit test generation. Zhang et al. (Zhejiang University, Huawei, and Singapore Management University) conducted both quantitative analysis and qualitative interviews with 17 professional developers to characterize noise in test training data.
 
 Their key findings on the Methods2Test dataset:
 \begin{itemize}
-    tem extbf{43.52\%} of samples contain at least one type of noise.
-    tem The largest noise category is extbf{Unnecessary Annotations} (43.64\% of all noise), consisting of Java annotations like exttt{@RequestMapping}, exttt{@GetMapping}, exttt{@ApiOperation}, etc., that are syntactically valid but provide no useful signal for the test generation task because they describe deployment/API metadata rather than test-relevant behavior.
-    tem The second largest is extbf{No Relevance} (12.70\%): test methods paired with focal methods they don't actually test, caused by heuristic errors in the original dataset extraction.
-    tem Seven syntactic noise categories: syntax errors, empty exception handlers, empty method bodies, ambiguous generic types, unnecessary annotations, non-English literals, and synchronized keywords.
-    tem Training on the cleaned subset (``less is more'') improved downstream model performance by 2--10\% across all four evaluated models (CodeBERT, CodeT5, StarCoder, CodeLlama) on metrics including CodeBLEU, compilation rate, and branch coverage.
-nd{itemize}
+    \item \textbf{43.52\%} of samples contain at least one type of noise.
+    \item The largest noise category is \textbf{Unnecessary Annotations} (43.64\% of all noise), consisting of Java annotations like \texttt{@RequestMapping}, \texttt{@GetMapping}, \texttt{@ApiOperation}, etc., that are syntactically valid but provide no useful signal for the test generation task because they describe deployment/API metadata rather than test-relevant behavior.
+    \item The second largest is \textbf{No Relevance} (12.70\%): test methods paired with focal methods they don't actually test, caused by heuristic errors in the original dataset extraction.
+    \item Seven syntactic noise categories: syntax errors, empty exception handlers, empty method bodies, ambiguous generic types, unnecessary annotations, non-English literals, and synchronized keywords.
+    \item Training on the cleaned subset (``less is more'') improved downstream model performance by 2--10\% across all four evaluated models (CodeBERT, CodeT5, StarCoder, CodeLlama) on metrics including CodeBLEU, compilation rate, and branch coverage.
+\end{itemize}
 
 The CleanTest framework consists of three filters:
 \begin{enumerate}
-    tem extbf{Rule-based syntax filter}: Uses tree-sitter AST parsing to detect syntactic noise, plus a 21,954-entry annotation dictionary for unnecessary annotation detection.
-    tem extbf{Relevance filter}: Uses method name matching between focal methods and test invocations.
-    tem extbf{Coverage filter}: Uses a GPT-2 regression model fine-tuned to predict branch coverage from code text.
-nd{enumerate}
+    \item \textbf{Rule-based syntax filter}: Uses tree-sitter AST parsing to detect syntactic noise, plus a 21,954-entry annotation dictionary for unnecessary annotation detection.
+    \item \textbf{Relevance filter}: Uses method name matching between focal methods and test invocations.
+    \item \textbf{Coverage filter}: Uses a GPT-2 regression model fine-tuned to predict branch coverage from code text.
+\end{enumerate}
 
 The original implementation is provided as standalone Python scripts in a Zenodo replication package. While functional, the scripts are tightly coupled to specific file paths, lack error handling for edge cases (e.g., deeply nested ASTs that cause stack overflow), and have no test suite. Our work addresses all of these limitations.
 
@@ -204,17 +197,17 @@ Large language models have been increasingly applied to code analysis tasks beyo
 
 \subsubsection{Code Understanding and Review}
 
-GPT-4~\cite{openai2023gpt4} and Claude 3~\cite{anthropic2024claude} can perform zero-shot code review, identifying potential bugs, style issues, and security vulnerabilities. Specialized code models like extbf{DeepSeek-Coder}~\cite{guo2024deepseek} and extbf{Qwen2.5-Coder}~\cite{hui2024qwen} achieve strong performance on code understanding benchmarks (HumanEval, MBPP, CodeContests) while being more cost-effective than general-purpose models.
+GPT-4~\cite{openai2023gpt4} and Claude 3~\cite{anthropic2024claude} can perform zero-shot code review, identifying potential bugs, style issues, and security vulnerabilities. Specialized code models like \textbf{DeepSeek-Coder}~\cite{guo2024deepseek} and \textbf{Qwen2.5-Coder}~\cite{hui2024qwen} achieve strong performance on code understanding benchmarks (HumanEval, MBPP, CodeContests) while being more cost-effective than general-purpose models.
 
 \subsubsection{Limitations: Hallucination and Pattern Matching}
 
 Despite impressive capabilities, LLMs have well-documented limitations relevant to our task:
 
-extbf{Hallucination}: Zhao et al.~\cite{zhao2026citation} demonstrated that LLMs generate plausible-sounding but non-existent citations in academic writing. Analogously, in code analysis, LLMs may confidently classify a sample as ``clean'' or ``noisy'' based on surface-level patterns rather than rigorous structural analysis.
+\textbf{Hallucination}: Zhao et al.~\cite{zhao2026citation} demonstrated that LLMs generate plausible-sounding but non-existent citations in academic writing. Analogously, in code analysis, LLMs may confidently classify a sample as ``clean'' or ``noisy'' based on surface-level patterns rather than rigorous structural analysis.
 
-extbf{Limited pattern dictionary}: A critical limitation for our task is that LLMs cannot reliably match against a dictionary of 21,954 annotation patterns. The patterns are too numerous and too diverse (ranging from common exttt{@GetMapping} to obscure exttt{@AtlasConversionInfo}) to fit into a single prompt context, and LLMs lack the exhaustive recall needed for dictionary-lookup tasks.
+\textbf{Limited pattern dictionary}: A critical limitation for our task is that LLMs cannot reliably match against a dictionary of 21,954 annotation patterns. The patterns are too numerous and too diverse (ranging from common \texttt{@GetMapping} to obscure \texttt{@AtlasConversionInfo}) to fit into a single prompt context, and LLMs lack the exhaustive recall needed for dictionary-lookup tasks.
 
-extbf{Multi-agent verification}: PaperOrchestra~\cite{song2026paperorchestra} from Google Cloud AI Research demonstrated that multi-agent systems with structured verification mechanisms (e.g., Semantic Scholar API integration for citation checking) significantly outperform single-agent approaches. This validates the broader principle underlying our work: orchestrated specialized components beat monolithic approaches.
+\textbf{Multi-agent verification}: PaperOrchestra~\cite{song2026paperorchestra} from Google Cloud AI Research demonstrated that multi-agent systems with structured verification mechanisms (e.g., Semantic Scholar API integration for citation checking) significantly outperform single-agent approaches. This validates the broader principle underlying our work: orchestrated specialized components beat monolithic approaches.
 
 \subsection{Agent Skill Architectures}
 
@@ -222,19 +215,19 @@ The concept of composable agent skills has gained traction with the rise of AI c
 
 \subsubsection{Superpowers}
 
-extbf{Superpowers}~\cite{vincent2026superpowers}, developed by Jesse Vincent at Prime Radiant, is the most popular skills framework with over 194,000 GitHub stars. It provides 14 core skills organized around a structured development methodology: brainstorming (Socratic design refinement), writing-plans (task decomposition), test-driven-development (RED-GREEN-REFACTOR enforcement), systematic-debugging (4-phase root cause analysis), and subagent-driven-development (parallel task execution with two-stage code review).
+\textbf{Superpowers}~\cite{vincent2026superpowers}, developed by Jesse Vincent at Prime Radiant, is the most popular skills framework with over 194,000 GitHub stars. It provides 14 core skills organized around a structured development methodology: brainstorming (Socratic design refinement), writing-plans (task decomposition), test-driven-development (RED-GREEN-REFACTOR enforcement), systematic-debugging (4-phase root cause analysis), and subagent-driven-development (parallel task execution with two-stage code review).
 
 Superpowers works across Claude Code, Codex CLI, Cursor, Gemini CLI, and OpenCode, demonstrating the cross-IDE viability of the SKILL.md protocol.
 
 \subsubsection{Academic Research Skills (ARS)}
 
-extbf{ARS}~\cite{wu2026ars} applies the skill paradigm to academic research workflows. Its four core skills (Deep Research with 13 agents, Academic Paper with 12 agents, Paper Reviewer with 7 agents, and Pipeline Orchestrator) demonstrate that multi-agent skill pipelines can coordinate complex, multi-stage workflows beyond software development.
+\textbf{ARS}~\cite{wu2026ars} applies the skill paradigm to academic research workflows. Its four core skills (Deep Research with 13 agents, Academic Paper with 12 agents, Paper Reviewer with 7 agents, and Pipeline Orchestrator) demonstrate that multi-agent skill pipelines can coordinate complex, multi-stage workflows beyond software development.
 
-ARS's orchestrator design --- where a top-level skill dispatches work to specialized sub-skills --- directly inspired our exttt{cleantest-pipeline} orchestrator design.
+ARS's orchestrator design --- where a top-level skill dispatches work to specialized sub-skills --- directly inspired our \texttt{cleantest-pipeline} orchestrator design.
 
 \subsubsection{The SKILL.md Protocol}
 
-Both frameworks converge on the exttt{SKILL.md} protocol: each skill is a directory containing a Markdown file with YAML front matter (name, description, trigger phrases) followed by detailed workflow instructions. The coding assistant discovers skills by scanning designated directories (e.g., exttt{extasciitilde/.codebuddy/skills/} for CodeBuddy, exttt{extasciitilde/.claude/skills/} for Claude Code). When a user's natural language query matches a skill's trigger phrases, the assistant loads the skill's instructions and follows them.
+Both frameworks converge on the \texttt{SKILL.md} protocol: each skill is a directory containing a Markdown file with YAML front matter (name, description, trigger phrases) followed by detailed workflow instructions. The coding assistant discovers skills by scanning designated directories (e.g., \texttt{\textasciitilde/.codebuddy/skills/} for CodeBuddy, \texttt{\textasciitilde/.claude/skills/} for Claude Code). When a user's natural language query matches a skill's trigger phrases, the assistant loads the skill's instructions and follows them.
 
 This protocol decouples skill authoring from the assistant runtime, enabling a thriving ecosystem of community-contributed skills. Our work contributes four new skills to this ecosystem, specifically targeting the code data quality domain.
 
@@ -243,31 +236,31 @@ This protocol decouples skill authoring from the assistant runtime, enabling a t
 The Aho-Corasick algorithm~\cite{aho1975efficient}, developed by Alfred Aho and Margaret Corasick at Bell Labs in 1975, is a classic multi-pattern string matching algorithm. Given a set of $k$ patterns with total length $m$ and a text of length $n$, it finds all occurrences of all patterns in time $O(n + m + z)$, where $z$ is the total number of matches. This is achieved through three key data structures:
 
 \begin{enumerate}
-    tem extbf{Goto function}: A trie built from all patterns, defining transitions on matching characters.
-    tem extbf{Failure function}: Links from each state to the longest proper suffix that is also a prefix of some pattern, enabling efficient backtracking without re-reading characters.
-    tem extbf{Output function}: Associates each state with the set of patterns that end at that state.
-nd{enumerate}
+    \item \textbf{Goto function}: A trie built from all patterns, defining transitions on matching characters.
+    \item \textbf{Failure function}: Links from each state to the longest proper suffix that is also a prefix of some pattern, enabling efficient backtracking without re-reading characters.
+    \item \textbf{Output function}: Associates each state with the set of patterns that end at that state.
+\end{enumerate}
 
-For our application with $k = 21{,}954$ patterns and average text length $n pprox 549$ characters, the na\"ive approach requires $O(n \cdot k) pprox 12$ million character comparisons per sample. Aho-Corasick reduces this to $O(n + z) pprox 549 + 1$ comparisons per sample (since most samples have at most one matching pattern). Over 593,953 samples, this represents a theoretical speedup of $\sim$22,000$imes$, though the practical speedup (11.5$imes$ for the full pipeline) is lower due to the overhead of other filter stages and Python interpreter costs.
+For our application with $k = 21{,}954$ patterns and average text length $n \approx 549$ characters, the na\"ive approach requires $O(n \cdot k) \approx 12$ million character comparisons per sample. Aho-Corasick reduces this to $O(n + z) \approx 549 + 1$ comparisons per sample (since most samples have at most one matching pattern). Over 593,953 samples, this represents a theoretical speedup of $\sim$22,000$\times$, though the practical speedup (11.5$\times$ for the full pipeline) is lower due to the overhead of other filter stages and Python interpreter costs.
 
-We use the exttt{pyahocorasick}~\cite{pyahocorasick} Python library, which provides a C-extension implementation with a Python interface. The automaton construction takes $<$0.1 seconds and the per-sample query averages $<$0.01 ms.
+We use the \texttt{pyahocorasick}~\cite{pyahocorasick} Python library, which provides a C-extension implementation with a Python interface. The automaton construction takes $<$0.1 seconds and the per-sample query averages $<$0.01 ms.
 
 \subsection{Tree-sitter for AST Parsing}
 
-extbf{tree-sitter}~\cite{brunsfeld2018treesitter} is a parser generator and incremental parsing library originally developed by Max Brunsfeld at GitHub for use in the Atom and VS Code editors. It builds concrete syntax trees (CSTs) for source files in over 50 programming languages through language-specific grammar packages.
+\textbf{tree-sitter}~\cite{brunsfeld2018treesitter} is a parser generator and incremental parsing library originally developed by Max Brunsfeld at GitHub for use in the Atom and VS Code editors. It builds concrete syntax trees (CSTs) for source files in over 50 programming languages through language-specific grammar packages.
 
 We chose tree-sitter over alternatives for four reasons:
 \begin{enumerate}
-    tem extbf{Performance}: The core parser is written in C, with Python bindings (exttt{py-tree-sitter}) providing near-native parsing speed. On our hardware, tree-sitter parses a typical Java method in $<$0.1 ms.
-    tem extbf{Error tolerance}: Unlike traditional parsers that fail on invalid input, tree-sitter generates CSTs that include explicit exttt{ERROR} nodes for malformed code regions. This is essential for our syntax error detection (Noise Type N1), allowing us to detect parse failures as a feature rather than a crash.
-    tem extbf{Concrete syntax trees}: tree-sitter produces CSTs (not ASTs), preserving all syntactic detail including comments, whitespace, and annotation structures. This is critical for detecting annotation noise patterns.
-    tem extbf{Multi-language extensibility}: Our current implementation uses exttt{tree-sitter-java}, but the same infrastructure can support exttt{tree-sitter-python} or exttt{tree-sitter-javascript} for future cross-language extensions.
-nd{enumerate}
+    \item \textbf{Performance}: The core parser is written in C, with Python bindings (\texttt{py-tree-sitter}) providing near-native parsing speed. On our hardware, tree-sitter parses a typical Java method in $<$0.1 ms.
+    \item \textbf{Error tolerance}: Unlike traditional parsers that fail on invalid input, tree-sitter generates CSTs that include explicit \texttt{ERROR} nodes for malformed code regions. This is essential for our syntax error detection (Noise Type N1), allowing us to detect parse failures as a feature rather than a crash.
+    \item \textbf{Concrete syntax trees}: tree-sitter produces CSTs (not ASTs), preserving all syntactic detail including comments, whitespace, and annotation structures. This is critical for detecting annotation noise patterns.
+    \item \textbf{Multi-language extensibility}: Our current implementation uses \texttt{tree-sitter-java}, but the same infrastructure can support \texttt{tree-sitter-python} or \texttt{tree-sitter-javascript} for future cross-language extensions.
+\end{enumerate}
 
 
 % ============================================================================
 \section{Requirements Analysis}
-abel{sec:requirements}
+\label{sec:requirements}
 % ============================================================================
 
 \subsection{Stakeholder Analysis}
@@ -276,28 +269,28 @@ We identify three primary stakeholder groups for CleanTest-Agent:
 
 \begin{table}[h]
 \caption{Stakeholder Analysis}
-abel{tab:stakeholders}
+\label{tab:stakeholders}
 \begin{tabular}{@{}lp{3cm}p{5.5cm}@{}}
-oprule
-extbf{Stakeholder} & extbf{Role} & extbf{Primary Needs} 
-idrule
-ML/AI Researchers & Train test generation models & Reproducible cleaning pipeline, transparent noise reports, configurable thresholds, batch processing 
-Software Engineers & Daily development workflow & Easy invocation via natural language, fast feedback, IDE integration 
-Tool Maintainers & Extend the system & Modular architecture, clear interfaces, comprehensive documentation 
+\toprule
+\textbf{Stakeholder} & \textbf{Role} & \textbf{Primary Needs} \\
+\midrule
+ML/AI Researchers & Train test generation models & Reproducible cleaning pipeline, transparent noise reports, configurable thresholds, batch processing \\
+Software Engineers & Daily development workflow & Easy invocation via natural language, fast feedback, IDE integration \\
+Tool Maintainers & Extend the system & Modular architecture, clear interfaces, comprehensive documentation \\
 \bottomrule
-nd{tabular}
-nd{table}
+\end{tabular}
+\end{table}
 
 \subsection{Problem Statement}
 
 Given a unit test training dataset $D = \{(f_i, t_i)\}_{i=1}^{N}$ where $f_i$ is a focal method and $t_i$ is a test case, the goal is to:
 
 \begin{enumerate}
-    tem Identify which samples are extit{noisy} (would degrade model training).
-    tem Categorize each noisy sample by noise type.
-    tem Output a cleaned dataset $D' \subseteq D$ along with a structured noise report.
-    tem Provide this functionality through both a CLI interface and an Agent Skill interface.
-nd{enumerate}
+    \item Identify which samples are \textit{noisy} (would degrade model training).
+    \item Categorize each noisy sample by noise type.
+    \item Output a cleaned dataset $D' \subseteq D$ along with a structured noise report.
+    \item Provide this functionality through both a CLI interface and an Agent Skill interface.
+\end{enumerate}
 
 The noise types are pre-defined according to the CleanTest framework, but the architecture should make it easy to add new noise types in the future without modifying existing code.
 
@@ -307,88 +300,88 @@ We identify three primary use cases:
 
 \subsubsection{UC1: Batch Dataset Cleaning}
 
-extbf{Actor}: ML/AI Researcher.
-extbf{Precondition}: Researcher has a CSV dataset with at minimum exttt{src\_fm} and exttt{target} columns.
+\textbf{Actor}: ML/AI Researcher.
+\textbf{Precondition}: Researcher has a CSV dataset with at minimum \texttt{src\_fm} and \texttt{target} columns.
 
-extbf{Main Flow}:
+\textbf{Main Flow}:
 \begin{enumerate}
-    tem Researcher invokes the pipeline via CLI or natural language through a coding assistant.
-    tem System loads the dataset and deduplicates by exttt{target} column.
-    tem System runs Filter 1 (syntax noise), reporting per-noise-type statistics.
-    tem System runs Filter 2 (relevance), reporting irrelevant test-focal pairs.
-    tem System optionally runs Filter 3 (coverage) if GPU and trained model are available.
-    tem System outputs: exttt{filtered\_data.csv}, exttt{noise\_report.json}, exttt{summary.md}.
-nd{enumerate}
+    \item Researcher invokes the pipeline via CLI or natural language through a coding assistant.
+    \item System loads the dataset and deduplicates by \texttt{target} column.
+    \item System runs Filter 1 (syntax noise), reporting per-noise-type statistics.
+    \item System runs Filter 2 (relevance), reporting irrelevant test-focal pairs.
+    \item System optionally runs Filter 3 (coverage) if GPU and trained model are available.
+    \item System outputs: \texttt{filtered\_data.csv}, \texttt{noise\_report.json}, \texttt{summary.md}.
+\end{enumerate}
 
-extbf{Postcondition}: Researcher has a cleaned CSV file and detailed noise statistics.
+\textbf{Postcondition}: Researcher has a cleaned CSV file and detailed noise statistics.
 
-extbf{Alternative Flow}: If the CSV is missing required columns, the system raises a exttt{ValueError} with a descriptive message listing available columns.
+\textbf{Alternative Flow}: If the CSV is missing required columns, the system raises a \texttt{ValueError} with a descriptive message listing available columns.
 
 \subsubsection{UC2: Interactive Noise Inspection}
 
-extbf{Actor}: Software Engineer using a coding assistant.
+\textbf{Actor}: Software Engineer using a coding assistant.
 
-extbf{Main Flow}:
+\textbf{Main Flow}:
 \begin{enumerate}
-    tem Engineer asks: ``Is this test noisy?'' and pastes a code snippet.
-    tem The coding assistant triggers the appropriate filter skill based on intent.
-    tem The filter analyzes the sample and returns: noise type (if any), confidence, and reasoning.
-    tem Engineer optionally asks for LLM second-opinion for borderline cases.
-nd{enumerate}
+    \item Engineer asks: ``Is this test noisy?'' and pastes a code snippet.
+    \item The coding assistant triggers the appropriate filter skill based on intent.
+    \item The filter analyzes the sample and returns: noise type (if any), confidence, and reasoning.
+    \item Engineer optionally asks for LLM second-opinion for borderline cases.
+\end{enumerate}
 
 \subsubsection{UC3: Pipeline Extension}
 
-extbf{Actor}: Tool Maintainer.
+\textbf{Actor}: Tool Maintainer.
 
-extbf{Main Flow}:
+\textbf{Main Flow}:
 \begin{enumerate}
-    tem Maintainer creates a new directory exttt{skills/cleantest-X-filter/}.
-    tem Writes exttt{SKILL.md} with description and trigger phrases.
-    tem Implements detection logic in exttt{scripts/X\_filter.py}.
-    tem Adds a new stage in exttt{src/pipeline.py} that calls the new filter.
-    tem Adds unit tests and runs CI to verify.
-nd{enumerate}
+    \item Maintainer creates a new directory \texttt{skills/cleantest-X-filter/}.
+    \item Writes \texttt{SKILL.md} with description and trigger phrases.
+    \item Implements detection logic in \texttt{scripts/X\_filter.py}.
+    \item Adds a new stage in \texttt{src/pipeline.py} that calls the new filter.
+    \item Adds unit tests and runs CI to verify.
+\end{enumerate}
 
 \subsection{Functional Requirements}
 
 \begin{table}[h]
 \caption{Functional Requirements}
-abel{tab:functional-req}
+\label{tab:functional-req}
 \begin{tabular}{@{}llp{5.5cm}@{}}
-oprule
-extbf{ID} & extbf{Priority} & extbf{Description} 
-idrule
-FR1 & Must & Detect 7 types of syntactic noise using AST parsing 
-FR2 & Must & Detect unnecessary annotations using dictionary matching 
-FR3 & Must & Assess test--focal method relevance via name matching 
-FR4 & Should & Enhance borderline cases with LLM semantic judgment 
-FR5 & Should & Predict branch coverage using GPT-2 regression model 
-FR6 & Must & Generate structured noise reports (JSON + Markdown) 
-FR7 & Must & Support batch processing of CSV datasets 
-FR8 & Should & Each filter independently invocable as an Agent Skill 
-FR9 & Could & Support interactive single-sample queries 
+\toprule
+\textbf{ID} & \textbf{Priority} & \textbf{Description} \\
+\midrule
+FR1 & Must & Detect 7 types of syntactic noise using AST parsing \\
+FR2 & Must & Detect unnecessary annotations using dictionary matching \\
+FR3 & Must & Assess test--focal method relevance via name matching \\
+FR4 & Should & Enhance borderline cases with LLM semantic judgment \\
+FR5 & Should & Predict branch coverage using GPT-2 regression model \\
+FR6 & Must & Generate structured noise reports (JSON + Markdown) \\
+FR7 & Must & Support batch processing of CSV datasets \\
+FR8 & Should & Each filter independently invocable as an Agent Skill \\
+FR9 & Could & Support interactive single-sample queries \\
 \bottomrule
-nd{tabular}
-nd{table}
+\end{tabular}
+\end{table}
 
 \subsection{Non-Functional Requirements}
 
 \begin{table}[h]
 \caption{Non-Functional Requirements}
-abel{tab:nonfunctional-req}
+\label{tab:nonfunctional-req}
 \begin{tabular}{@{}llp{5.5cm}@{}}
-oprule
-extbf{ID} & extbf{Category} & extbf{Description} 
-idrule
-NFR1 & Performance & Process 600K samples in $<$5 minutes 
-NFR2 & Cost & LLM cost $<$\$0.05 per 500 samples 
-NFR3 & Accuracy & F1 $>$ 0.95 for noise detection 
-NFR4 & Extensibility & New filters addable without modifying existing code 
-NFR5 & Compatibility & Work with CodeBuddy, Claude Code, Cursor 
-NFR6 & Testability & All filters covered by unit tests; CI/CD passing 
+\toprule
+\textbf{ID} & \textbf{Category} & \textbf{Description} \\
+\midrule
+NFR1 & Performance & Process 600K samples in $<$5 minutes \\
+NFR2 & Cost & LLM cost $<$\$0.05 per 500 samples \\
+NFR3 & Accuracy & F1 $>$ 0.95 for noise detection \\
+NFR4 & Extensibility & New filters addable without modifying existing code \\
+NFR5 & Compatibility & Work with CodeBuddy, Claude Code, Cursor \\
+NFR6 & Testability & All filters covered by unit tests; CI/CD passing \\
 \bottomrule
-nd{tabular}
-nd{table}
+\end{tabular}
+\end{table}
 
 \subsection{Requirements Traceability Matrix}
 
@@ -396,44 +389,44 @@ We maintain a traceability matrix linking each requirement to its implementation
 
 \begin{table}[h]
 \caption{Requirements Traceability Matrix}
-abel{tab:traceability}
+\label{tab:traceability}
 \begin{tabular}{@{}lp{4cm}p{4.5cm}@{}}
-oprule
-extbf{Req} & extbf{Module} & extbf{Test Case} 
-idrule
-FR1 & exttt{src/parser\_utils.py} & exttt{test\_syntax\_filter.py} (18 cases) 
-FR2 & exttt{src/pipeline.py} (Aho-Corasick) & exttt{test\_syntax\_filter.py::TestUnnecessaryAnnotations} 
-FR3 & exttt{src/parser\_utils.py} & exttt{test\_relevance\_filter.py} (7 cases) 
-FR4 & exttt{src/llm\_client.py} & Integration test (requires API) 
-FR5 & exttt{coverage\_predictor.py} & exttt{test\_coverage\_filter.py} (4 cases) 
-FR6 & exttt{src/report\_generator.py} & exttt{test\_report.py} (5 cases) 
-FR7 & exttt{src/data\_loader.py} & exttt{test\_pipeline.py} (4 cases) 
-FR8 & exttt{skills/*/SKILL.md} & Manual skill discovery test 
-NFR1 & Aho-Corasick in pipeline & RQ3 experiment (Section~ef{sec:evaluation}) 
-NFR6 & exttt{tests/} directory & CI: 38 tests passing 
+\toprule
+\textbf{Req} & \textbf{Module} & \textbf{Test Case} \\
+\midrule
+FR1 & \texttt{src/parser\_utils.py} & \texttt{test\_syntax\_filter.py} (18 cases) \\
+FR2 & \texttt{src/pipeline.py} (Aho-Corasick) & \texttt{test\_syntax\_filter.py::TestUnnecessaryAnnotations} \\
+FR3 & \texttt{src/parser\_utils.py} & \texttt{test\_relevance\_filter.py} (7 cases) \\
+FR4 & \texttt{src/llm\_client.py} & Integration test (requires API) \\
+FR5 & \texttt{coverage\_predictor.py} & \texttt{test\_coverage\_filter.py} (4 cases) \\
+FR6 & \texttt{src/report\_generator.py} & \texttt{test\_report.py} (5 cases) \\
+FR7 & \texttt{src/data\_loader.py} & \texttt{test\_pipeline.py} (4 cases) \\
+FR8 & \texttt{skills/*/SKILL.md} & Manual skill discovery test \\
+NFR1 & Aho-Corasick in pipeline & RQ3 experiment (Section~\ref{sec:evaluation}) \\
+NFR6 & \texttt{tests/} directory & CI: 38 tests passing \\
 \bottomrule
-nd{tabular}
-nd{table}
+\end{tabular}
+\end{table}
 
 This traceability ensures that every requirement has at least one corresponding implementation and verification artifact.
 
 
 % ============================================================================
 \section{The Model-Driven Approach}
-abel{sec:model-driven}
+\label{sec:model-driven}
 % ============================================================================
 
-This section presents the central methodological contribution of our work: the extbf{model-driven approach} for code data quality assurance. This directly responds to the assignment's core requirement: ``how to use intelligent model-driven methods to solve the chosen problem.''
+This section presents the central methodological contribution of our work: the \textbf{model-driven approach} for code data quality assurance. This directly responds to the assignment's core requirement: ``how to use intelligent model-driven methods to solve the chosen problem.''
 
 \subsection{Definition}
 
-We define the extbf{model-driven approach} as a paradigm that orchestrates multiple specialized components, each based on a different ``model'' of computation, applied where it is most effective:
+We define the \textbf{model-driven approach} as a paradigm that orchestrates multiple specialized components, each based on a different ``model'' of computation, applied where it is most effective:
 
 \begin{itemize}
-    tem extbf{Rule-based models}: Deterministic pattern matching, AST parsing, regex --- used where exhaustive coverage of a known finite pattern set is required and where deterministic results are critical.
-    tem extbf{Machine learning models}: Trained neural networks (e.g., GPT-2 for coverage regression) --- used where the task has been studied with labeled training data and a learned representation outperforms hand-crafted heuristics.
-    tem extbf{Large language models (LLMs)}: General-purpose LLMs (e.g., GPT-4o-mini, Claude) --- used where semantic understanding and reasoning are required, and where rules and ML models cannot capture the needed nuance.
-nd{itemize}
+    \item \textbf{Rule-based models}: Deterministic pattern matching, AST parsing, regex --- used where exhaustive coverage of a known finite pattern set is required and where deterministic results are critical.
+    \item \textbf{Machine learning models}: Trained neural networks (e.g., GPT-2 for coverage regression) --- used where the task has been studied with labeled training data and a learned representation outperforms hand-crafted heuristics.
+    \item \textbf{Large language models (LLMs)}: General-purpose LLMs (e.g., GPT-4o-mini, Claude) --- used where semantic understanding and reasoning are required, and where rules and ML models cannot capture the needed nuance.
+\end{itemize}
 
 The orchestration is performed through a pipeline architecture, where each component handles the cases it is best suited for, and falls back to the next component for borderline or specialized cases.
 
@@ -443,73 +436,73 @@ We contrast our model-driven approach with the alternative ``pure-LLM tool appro
 
 \begin{table}[h]
 \caption{Model-Driven vs. Pure-LLM Approach}
-abel{tab:model-driven-vs-llm}
+\label{tab:model-driven-vs-llm}
 \begin{tabular}{@{}lll@{}}
-oprule
-extbf{Dimension} & extbf{Pure-LLM Approach} & extbf{Model-Driven (Ours)} 
-idrule
-Architecture & Monolithic LLM call & Pipeline of specialized components 
-Pattern matching & LLM reasons from prompt & Aho-Corasick automaton (21,954 patterns) 
-AST analysis & LLM approximates parsing & tree-sitter exact parsing 
-Coverage prediction & LLM guesses & GPT-2 regression model 
-Semantic judgment & LLM (always) & LLM (only borderline cases, $\sim$12.7\%) 
-Cost per sample & High (\$0.0003--0.0005) & Low ($\sim$\$0.00002 amortized) 
-Latency per sample & High ($>$800 ms) & Low ($<$1 ms for rules) 
-Determinism & No (LLM stochasticity) & Yes (rules) + tunable (LLM, temp=0) 
-Extensibility & Re-prompt engineering & Add new pipeline stage 
-Debuggability & LLM is a black box & Each stage is inspectable 
-Cost (600K samples) & \$180--\$300 & $<$\$15 
+\toprule
+\textbf{Dimension} & \textbf{Pure-LLM Approach} & \textbf{Model-Driven (Ours)} \\
+\midrule
+Architecture & Monolithic LLM call & Pipeline of specialized components \\
+Pattern matching & LLM reasons from prompt & Aho-Corasick automaton (21,954 patterns) \\
+AST analysis & LLM approximates parsing & tree-sitter exact parsing \\
+Coverage prediction & LLM guesses & GPT-2 regression model \\
+Semantic judgment & LLM (always) & LLM (only borderline cases, $\sim$12.7\%) \\
+Cost per sample & High (\$0.0003--0.0005) & Low ($\sim$\$0.00002 amortized) \\
+Latency per sample & High ($>$800 ms) & Low ($<$1 ms for rules) \\
+Determinism & No (LLM stochasticity) & Yes (rules) + tunable (LLM, temp=0) \\
+Extensibility & Re-prompt engineering & Add new pipeline stage \\
+Debuggability & LLM is a black box & Each stage is inspectable \\
+Cost (600K samples) & \$180--\$300 & $<$\$15 \\
 \bottomrule
-nd{tabular}
-nd{table}
+\end{tabular}
+\end{table}
 
 \subsection{Why the Model-Driven Approach Wins}
 
-Our experiments (Section~ef{sec:evaluation}) demonstrate that the model-driven approach achieves F1=0.965 while the best pure-LLM approach achieves only F1=0.789. We identify three root causes for this gap:
+Our experiments (Section~\ref{sec:evaluation}) demonstrate that the model-driven approach achieves F1=0.965 while the best pure-LLM approach achieves only F1=0.789. We identify three root causes for this gap:
 
 \subsubsection{Root Cause 1: The Dictionary Knowledge Gap}
 
-The annotation noise detection subtask requires matching against 21,954 specific patterns (e.g., exttt{@RequestMapping}, exttt{@ApiOperation}, exttt{@ScalarFunction}). The Aho-Corasick automaton achieves extbf{100\% recall} on this subtask because every pattern is explicitly encoded.
+The annotation noise detection subtask requires matching against 21,954 specific patterns (e.g., \texttt{@RequestMapping}, \texttt{@ApiOperation}, \texttt{@ScalarFunction}). The Aho-Corasick automaton achieves \textbf{100\% recall} on this subtask because every pattern is explicitly encoded.
 
-In contrast, the LLM has seen some of these patterns during pre-training but cannot reliably recall all 21,954. It recognizes common patterns (exttt{@GetMapping}, exttt{@PostMapping}) but misses rare ones (exttt{@AtlasConversionInfo}, exttt{@ScalarFunction("ST\_Length")}). This is analogous to asking a person to recite an entire dictionary from memory versus looking up words in the dictionary --- the former inevitably has gaps.
+In contrast, the LLM has seen some of these patterns during pre-training but cannot reliably recall all 21,954. It recognizes common patterns (\texttt{@GetMapping}, \texttt{@PostMapping}) but misses rare ones (\texttt{@AtlasConversionInfo}, \texttt{@ScalarFunction("ST\_Length")}). This is analogous to asking a person to recite an entire dictionary from memory versus looking up words in the dictionary --- the former inevitably has gaps.
 
 Empirically, the LLM zero-shot approach achieves only 58\% recall on annotation noise, meaning it misses 42\% of noisy annotations. Since annotations account for 43.68\% of all noise, this single failure mode explains the majority of the F1 gap.
 
 \subsubsection{Root Cause 2: Structural Analysis vs. Textual Approximation}
 
-For syntax-related noise types (empty methods, empty exception handlers, ambiguous generics), the rule-based approach uses tree-sitter to perform extit{exact structural analysis}: it parses the code into a concrete syntax tree and checks precise structural properties (e.g., ``does the exttt{block} node have fewer than 3 children?'').
+For syntax-related noise types (empty methods, empty exception handlers, ambiguous generics), the rule-based approach uses tree-sitter to perform \textit{exact structural analysis}: it parses the code into a concrete syntax tree and checks precise structural properties (e.g., ``does the \texttt{block} node have fewer than 3 children?'').
 
-The LLM, by contrast, performs extit{textual approximation}: it reads the code as text and estimates whether the structure seems problematic. This works for obvious cases (exttt{public void init() \{ \}}) but fails for subtle ones where the code extit{looks} normal but has structural issues detectable only through parsing.
+The LLM, by contrast, performs \textit{textual approximation}: it reads the code as text and estimates whether the structure seems problematic. This works for obvious cases (\texttt{public void init() \{ \}}) but fails for subtle ones where the code \textit{looks} normal but has structural issues detectable only through parsing.
 
 This is analogous to measuring height with a ruler (exact) versus estimating by eye (approximate) --- the latter has inherent error.
 
 \subsubsection{Root Cause 3: Cost Scaling}
 
-The model-driven approach processes 99\% of samples using free, local computation (rules + local GPT-2 model) and only 1\% using paid LLM API calls. The pure-LLM approach requires a paid API call for extit{every} sample:
+The model-driven approach processes 99\% of samples using free, local computation (rules + local GPT-2 model) and only 1\% using paid LLM API calls. The pure-LLM approach requires a paid API call for \textit{every} sample:
 
 \begin{table}[h]
 \caption{Cost Breakdown for 600,000 Samples}
-abel{tab:cost-breakdown}
+\label{tab:cost-breakdown}
 \begin{tabular}{@{}lrrr@{}}
-oprule
-extbf{Component} & extbf{Model-Driven} & extbf{Pure LLM (zero-shot)} & extbf{Pure LLM (few-shot)} 
-idrule
-Rule-based processing & \$0 & --- & --- 
-GPT-2 local inference & \$0 (electricity only) & --- & --- 
-LLM API (borderline) & \$12 (12.7\% of samples) & \$180 (100\%) & \$300 (100\%) 
-idrule
-extbf{Total} & extbf{\$12} & extbf{\$180} & extbf{\$300} 
+\toprule
+\textbf{Component} & \textbf{Model-Driven} & \textbf{Pure LLM (zero-shot)} & \textbf{Pure LLM (few-shot)} \\
+\midrule
+Rule-based processing & \$0 & --- & --- \\
+GPT-2 local inference & \$0 (electricity only) & --- & --- \\
+LLM API (borderline) & \$12 (12.7\% of samples) & \$180 (100\%) & \$300 (100\%) \\
+\midrule
+\textbf{Total} & \textbf{\$12} & \textbf{\$180} & \textbf{\$300} \\
 \bottomrule
-nd{tabular}
-nd{table}
+\end{tabular}
+\end{table}
 
-At scale, the cost difference is 15--25$imes$, making the pure-LLM approach impractical for large datasets.
+At scale, the cost difference is 15--25$\times$, making the pure-LLM approach impractical for large datasets.
 
 \subsection{Concrete Walkthrough: One Sample, Two Methods}
 
 To make the comparison tangible, we trace how both methods process a specific sample from Methods2Test.
 
-extbf{Sample}: A focal method with Spring annotations paired with a relevant test.
+\textbf{Sample}: A focal method with Spring annotations paired with a relevant test.
 
 \begin{lstlisting}[language=Java,caption={Example focal method with annotation noise}]
 @ApiOperation(value = "Get all users")
@@ -517,72 +510,72 @@ extbf{Sample}: A focal method with Spring annotations paired with a relevant tes
 public List<User> getAllUsers() {
     return userRepository.findAll();
 }
-nd{lstlisting}
+\end{lstlisting}
 
 \begin{lstlisting}[language=Java,caption={Example test case (relevant but paired with noisy focal method)}]
 @Test
 public void testGetAllUsers() {
     assertEquals(2, getAllUsers().size());
 }
-nd{lstlisting}
+\end{lstlisting}
 
-extbf{Model-driven method}:
+\textbf{Model-driven method}:
 \begin{enumerate}
-    tem Aho-Corasick scans the focal method text.
-    tem Matches pattern exttt{@ApiOperation(value = "Get all users")} from the 21,954-entry dictionary.
-    tem Immediately returns exttt{NOISE (unnecessary\_annotations)}.
-    tem Time: 0.01 ms. Cost: \$0. Confidence: 100\% (deterministic match).
-nd{enumerate}
+    \item Aho-Corasick scans the focal method text.
+    \item Matches pattern \texttt{@ApiOperation(value = "Get all users")} from the 21,954-entry dictionary.
+    \item Immediately returns \texttt{NOISE (unnecessary\_annotations)}.
+    \item Time: 0.01 ms. Cost: \$0. Confidence: 100\% (deterministic match).
+\end{enumerate}
 
-extbf{Pure-LLM method}:
+\textbf{Pure-LLM method}:
 \begin{enumerate}
-    tem Constructs prompt with the code and asks ``Is this noisy?''
-    tem LLM reasons: ``exttt{@ApiOperation} and exttt{@GetMapping} are standard Spring annotations. The test calls exttt{getAllUsers()} and checks the result. This looks like valid code.''
-    tem Returns exttt{CLEAN}. extbf{Wrong answer.}
-    tem Time: 800 ms. Cost: \$0.0003.
-nd{enumerate}
+    \item Constructs prompt with the code and asks ``Is this noisy?''
+    \item LLM reasons: ``\texttt{@ApiOperation} and \texttt{@GetMapping} are standard Spring annotations. The test calls \texttt{getAllUsers()} and checks the result. This looks like valid code.''
+    \item Returns \texttt{CLEAN}. \textbf{Wrong answer.}
+    \item Time: 800 ms. Cost: \$0.0003.
+\end{enumerate}
 
 The LLM fails because it treats annotations as ``normal Java code'' without knowing the domain-specific definition of noise for test generation training data.
 
 \subsection{Model Selection for Coverage Prediction}
-abel{sec:model-selection}
+\label{sec:model-selection}
 
 For the coverage prediction filter (Filter 3), we use a fine-tuned neural network rather than an LLM API. The original CleanTest paper used GPT-2 (117M parameters). We discuss the rationale and a potential improvement.
 
 \subsubsection{Why Not Use a Large LLM for Coverage Prediction?}
 
-Coverage prediction is a extit{numerical regression} task: the model receives code text and outputs a float $n [0, 1]$. This is fundamentally different from text generation or reasoning tasks where LLMs excel:
+Coverage prediction is a \textit{numerical regression} task: the model receives code text and outputs a float $\in [0, 1]$. This is fundamentally different from text generation or reasoning tasks where LLMs excel:
 
 \begin{itemize}
-    tem LLMs are not designed to output precise numerical predictions. Asking GPT-4 ``what is the branch coverage of this test?'' yields unreliable estimates.
-    tem Each prediction requires an API call (\$0.0003), totaling \$180 for 600K samples.
-    tem A small, locally-deployed regression model achieves better precision at zero marginal cost.
-nd{itemize}
+    \item LLMs are not designed to output precise numerical predictions. Asking GPT-4 ``what is the branch coverage of this test?'' yields unreliable estimates.
+    \item Each prediction requires an API call (\$0.0003), totaling \$180 for 600K samples.
+    \item A small, locally-deployed regression model achieves better precision at zero marginal cost.
+\end{itemize}
 
 \subsubsection{Proposed Improvement: Qwen2.5-Coder 0.5B}
 
-As a potential improvement over the original GPT-2, we identify extbf{Qwen2.5-Coder-0.5B}~\cite{hui2024qwen} (Alibaba Tongyi Lab) as a suitable replacement:
+As a potential improvement over the original GPT-2, we identify \textbf{Qwen2.5-Coder-0.5B}~\cite{hui2024qwen} (Alibaba Tongyi Lab) as a suitable replacement:
 
 \begin{table}[h]
 \caption{Coverage Model Comparison: GPT-2 vs. Qwen2.5-Coder}
-abel{tab:model-comparison}
+\label{tab:model-comparison}
 \begin{tabular}{@{}lll@{}}
-oprule
-extbf{Property} & extbf{GPT-2} & extbf{Qwen2.5-Coder-0.5B} 
-idrule
-Parameters & 117M & 500M (4.3$imes$) 
-Code-specific pre-training & No & Yes (code-specialized) 
-Java understanding & Limited & Strong 
-Training hardware & Single RTX 3090 & Single RTX 3090 (LoRA) 
-Can run on Apple Silicon & Yes (CPU) & Yes (CPU) 
-Training corpus recency & 2019 & 2024 
+\toprule
+\textbf{Property} & \textbf{GPT-2} & \textbf{Qwen2.5-Coder-0.5B} \\
+\midrule
+Parameters & 117M & 500M (4.3$\times$) \\
+Code-specific pre-training & No & Yes (code-specialized) \\
+Java understanding & Limited & Strong \\
+Training hardware & Single RTX 3090 & Single RTX 3090 (LoRA) \\
+Can run on Apple Silicon & Yes (CPU) & Yes (CPU) \\
+Training corpus recency & 2019 & 2024 \\
 \bottomrule
-nd{tabular}
-nd{table}
+\end{tabular}
+\end{table}
 
-Qwen2.5-Coder-0.5B offers stronger code representations due to code-specific pre-training on a larger, more recent corpus, while remaining small enough to fine-tune on consumer hardware. We chose extit{not} to use larger models (e.g., Qwen3-Coder-Next with 80B parameters in MoE architecture) because coverage regression is a low-dimensional task that does not benefit from the multi-expert diversity of large MoE models.
+Qwen2.5-Coder-0.5B offers stronger code representations due to code-specific pre-training on a larger, more recent corpus, while remaining small enough to fine-tune on consumer hardware. We chose \textit{not} to use larger models (e.g., Qwen3-Coder-Next with 80B parameters in MoE architecture) because coverage regression is a low-dimensional task that does not benefit from the multi-expert diversity of large MoE models.
 
-This model selection principle --- extit{use the smallest model that adequately solves the subtask} --- is a concrete application of our model-driven philosophy.
+This model selection principle --- \textit{use the smallest model that adequately solves the subtask} --- is a concrete application of our model-driven philosophy.
 
 \subsection{Generalization}
 
@@ -590,31 +583,31 @@ While our work focuses on test data cleaning, the model-driven principle general
 
 \begin{table}[h]
 \caption{When to Apply the Model-Driven Approach}
-abel{tab:when-md}
+\label{tab:when-md}
 \begin{tabular}{@{}p{8cm}l@{}}
-oprule
-extbf{Task Property} & extbf{Recommendation} 
-idrule
-Has clear deterministic patterns & Use rules 
-Has labeled training data and a learnable function & Train ML model 
-Requires open-ended semantic reasoning & Use LLM 
-Has all three subtask types in different proportions & Use Model-Driven (this work) 
-Has only the third (purely semantic, small scale) & Pure-LLM is acceptable 
+\toprule
+\textbf{Task Property} & \textbf{Recommendation} \\
+\midrule
+Has clear deterministic patterns & Use rules \\
+Has labeled training data and a learnable function & Train ML model \\
+Requires open-ended semantic reasoning & Use LLM \\
+Has all three subtask types in different proportions & Use Model-Driven (this work) \\
+Has only the third (purely semantic, small scale) & Pure-LLM is acceptable \\
 \bottomrule
-nd{tabular}
-nd{table}
+\end{tabular}
+\end{table}
 
-The model-driven approach is most beneficial when the task has extit{multiple} subtasks of extit{different} natures, such as code data cleaning, software engineering automation, and complex retrieval-augmented question answering.
+The model-driven approach is most beneficial when the task has \textit{multiple} subtasks of \textit{different} natures, such as code data cleaning, software engineering automation, and complex retrieval-augmented question answering.
 
 
 % ============================================================================
 \section{System Design}
-abel{sec:design}
+\label{sec:design}
 % ============================================================================
 
 \subsection{Architecture Overview}
 
-CleanTest-Agent follows a extbf{pipeline-of-skills} architecture, where each processing stage is encapsulated as an independent Agent Skill. Figure~ef{fig:architecture} illustrates the overall system design.
+CleanTest-Agent follows a \textbf{pipeline-of-skills} architecture, where each processing stage is encapsulated as an independent Agent Skill. Figure~\ref{fig:architecture} illustrates the overall system design.
 
 \begin{figure}[h]
 \centering
@@ -623,12 +616,12 @@ CleanTest-Agent follows a extbf{pipeline-of-skills} architecture, where each pro
     box/.style={rectangle, draw, rounded corners, minimum width=3cm, minimum height=0.8cm, align=center, font=\small},
     arrow/.style={->, >=stealth, thick},
 ]
-ode[box, fill=blue!10] (user) {User / Coding Assistant};
-ode[box, fill=orange!15, below=of user] (orch) {Orchestrator Skill{ootnotesizeexttt{cleantest-pipeline}}};
-ode[box, fill=green!15, below left=1cm and -0.5cm of orch] (f1) {Filter 1: Syntax{ootnotesize AST + Aho-Corasick}{ootnotesize + LLM Enhance}};
-ode[box, fill=green!15, below=1cm of orch] (f2) {Filter 2: Relevance{ootnotesize Name Match}{ootnotesize + LLM Fallback}};
-ode[box, fill=green!15, below right=1cm and -0.5cm of orch] (f3) {Filter 3: Coverage{ootnotesize GPT-2 Regression}};
-ode[box, fill=yellow!15, below=3.5cm of orch] (out) {Clean Dataset + Noise Report};
+\node[box, fill=blue!10] (user) {User / Coding Assistant};
+\node[box, fill=orange!15, below=of user] (orch) {Orchestrator Skill\\{\footnotesize\texttt{cleantest-pipeline}}};
+\node[box, fill=green!15, below left=1cm and -0.5cm of orch] (f1) {Filter 1: Syntax\\{\footnotesize AST + Aho-Corasick}\\{\footnotesize + LLM Enhance}};
+\node[box, fill=green!15, below=1cm of orch] (f2) {Filter 2: Relevance\\{\footnotesize Name Match}\\{\footnotesize + LLM Fallback}};
+\node[box, fill=green!15, below right=1cm and -0.5cm of orch] (f3) {Filter 3: Coverage\\{\footnotesize GPT-2 Regression}};
+\node[box, fill=yellow!15, below=3.5cm of orch] (out) {Clean Dataset + Noise Report};
 
 \draw[arrow] (user) -- (orch);
 \draw[arrow] (orch) -- (f1);
@@ -637,15 +630,15 @@ ode[box, fill=yellow!15, below=3.5cm of orch] (out) {Clean Dataset + Noise Repor
 \draw[arrow] (f1) -- (out);
 \draw[arrow] (f2) -- (out);
 \draw[arrow] (f3) -- (out);
-nd{tikzpicture}
+\end{tikzpicture}
 \caption{CleanTest-Agent System Architecture}
-\Description{A diagram showing the pipeline architecture: User connects to Orchestrator Skill, which dispatches to three filters (Syntax with AST and Aho-Corasick, Relevance with Name Match and LLM, Coverage with GPT-2), all producing a clean dataset and noise report.}
-abel{fig:architecture}
-nd{figure}
+\Description{Pipeline architecture diagram showing User connecting to Orchestrator Skill, which dispatches to three filter skills (Syntax, Relevance, Coverage), producing clean dataset and noise report.}
+\label{fig:architecture}
+\end{figure}
 
 \subsection{Skill Protocol}
 
-Each skill follows the standard exttt{SKILL.md} protocol:
+Each skill follows the standard \texttt{SKILL.md} protocol:
 
 \begin{lstlisting}[language={},caption={SKILL.md structure},label={lst:skillmd}]
 ---
@@ -658,9 +651,9 @@ description: >
 
 # Skill Instructions
 [Workflow, prompts, scripts reference]
-nd{lstlisting}
+\end{lstlisting}
 
-The coding assistant reads the exttt{SKILL.md} at session start, and automatically invokes the skill when the user's intent matches the trigger phrases.
+The coding assistant reads the \texttt{SKILL.md} at session start, and automatically invokes the skill when the user's intent matches the trigger phrases.
 
 \subsection{Filter 1: Syntax Noise Detection}
 
@@ -668,68 +661,68 @@ Filter 1 detects seven categories of syntactic noise:
 
 \begin{table}[h]
 \caption{Syntax Noise Types and Detection Methods}
-abel{tab:noise-types}
+\label{tab:noise-types}
 \begin{tabular}{@{}clll@{}}
-oprule
-extbf{ID} & extbf{Type} & extbf{Method} & extbf{LLM} 
-idrule
-N1 & Syntax Errors & AST ERROR node & \checkmark 
-N2 & Empty Exception & catch/finally empty block & --- 
-N3 & Empty Method & method body $<$3 children & \checkmark 
-N4 & Ambiguous Type & generics w/o exttt{extends} & --- 
-N5 & Unnecessary Ann. & Aho-Corasick (21,954 patterns) & --- 
-N6 & Non-English & CJK regex & --- 
-N7 & Synchronized & keyword match & --- 
+\toprule
+\textbf{ID} & \textbf{Type} & \textbf{Method} & \textbf{LLM} \\
+\midrule
+N1 & Syntax Errors & AST ERROR node & \checkmark \\
+N2 & Empty Exception & catch/finally empty block & --- \\
+N3 & Empty Method & method body $<$3 children & \checkmark \\
+N4 & Ambiguous Type & generics w/o \texttt{extends} & --- \\
+N5 & Unnecessary Ann. & Aho-Corasick (21,954 patterns) & --- \\
+N6 & Non-English & CJK regex & --- \\
+N7 & Synchronized & keyword match & --- \\
 \bottomrule
-nd{tabular}
-nd{table}
+\end{tabular}
+\end{table}
 
 \subsubsection{Aho-Corasick Optimization}
 
 The original CleanTest implementation uses a linear scan over 21,954 annotation patterns for each sample:
 
 \begin{equation}
-T_{ext{naive}} = O(N imes K imes L)
-nd{equation}
+T_{\text{naive}} = O(N \times K \times L)
+\end{equation}
 
 where $N$ is the number of samples, $K = 21{,}954$ is the number of patterns, and $L$ is the average text length. This results in approximately 30 minutes for 593,953 samples.
 
 We replace this with the Aho-Corasick algorithm~\cite{aho1975efficient}, which constructs a finite automaton from all patterns in $O(M)$ time (where $M$ is the total pattern length) and then scans each text in $O(L + Z)$ time (where $Z$ is the number of matches):
 
 \begin{equation}
-T_{ext{aho}} = O(M) + O(N imes (L + Z))
-nd{equation}
+T_{\text{aho}} = O(M) + O(N \times (L + Z))
+\end{equation}
 
-This reduces Filter 1 processing time from 30 minutes to extbf{1.6 minutes} --- an extbf{18.8$imes$} speedup for the annotation matching component and extbf{11.5$imes$} for the overall pipeline.
+This reduces Filter 1 processing time from 30 minutes to \textbf{1.6 minutes} --- an \textbf{18.8$\times$} speedup for the annotation matching component and \textbf{11.5$\times$} for the overall pipeline.
 
 \subsubsection{LLM Enhancement}
 
 For noise types N1 (syntax errors) and N3 (empty methods), the rule-based detector may flag samples that are actually valid (e.g., a minimal test stub or a method with only a return statement). We introduce an optional LLM confirmation step:
 
 \begin{enumerate}
-    tem Rule flags sample as potential noise
-    tem LLM receives the code + rule diagnosis
-    tem LLM responds ``NOISE'' (confirm) or ``KEEP'' (override)
-    tem Only $\sim$5\% of samples in these categories require LLM
-nd{enumerate}
+    \item Rule flags sample as potential noise
+    \item LLM receives the code + rule diagnosis
+    \item LLM responds ``NOISE'' (confirm) or ``KEEP'' (override)
+    \item Only $\sim$5\% of samples in these categories require LLM
+\end{enumerate}
 
 \subsection{Filter 2: Relevance Assessment}
 
 Filter 2 uses a two-stage approach:
 
-extbf{Stage A: AST Name Matching (Fast Path).} We parse the focal method to extract declared method names and parameter counts, then parse the test case to extract all method invocations. If the intersection is non-empty, the test is considered relevant.
+\textbf{Stage A: AST Name Matching (Fast Path).} We parse the focal method to extract declared method names and parameter counts, then parse the test case to extract all method invocations. If the intersection is non-empty, the test is considered relevant.
 
-extbf{Stage B: LLM Semantic Judgment (Borderline Cases).} When Stage A finds zero overlap ($\sim$12.7\% of samples), the LLM is asked whether the test might be testing the focal method indirectly (via wrappers, inheritance, or side effects).
+\textbf{Stage B: LLM Semantic Judgment (Borderline Cases).} When Stage A finds zero overlap ($\sim$12.7\% of samples), the LLM is asked whether the test might be testing the focal method indirectly (via wrappers, inheritance, or side effects).
 
 \subsection{Filter 3: Coverage Prediction}
 
 Filter 3 uses a fine-tuned GPT-2 regression model to predict branch coverage:
 \begin{itemize}
-    tem Input: concatenation of focal method + test case tokens
-    tem Output: predicted coverage $n [0, 1]$
-    tem Threshold: samples with predicted coverage $< 0.3$ are removed
-    tem Fallback: filter is skipped if no GPU/model is available
-nd{itemize}
+    \item Input: concatenation of focal method + test case tokens
+    \item Output: predicted coverage $\in [0, 1]$
+    \item Threshold: samples with predicted coverage $< 0.3$ are removed
+    \item Fallback: filter is skipped if no GPU/model is available
+\end{itemize}
 
 \subsection{Pipeline Orchestrator}
 
@@ -737,83 +730,83 @@ The orchestrator skill coordinates the three filters:
 
 \begin{algorithm}[h]
 \caption{CleanTest-Agent Pipeline}
-abel{alg:pipeline}
+\label{alg:pipeline}
 \begin{algorithmic}[1]
 \REQUIRE Dataset $D$, config $C$ (thresholds, LLM enable flag)
 \ENSURE Cleaned dataset $D'$, noise report $R$
-\STATE $D ets$ extsc{Deduplicate}($D$, key=exttt{target})
-\STATE $R ets$ extsc{InitReport}($|D|$)
+\STATE $D \gets$ \textsc{Deduplicate}($D$, key=\texttt{target})
+\STATE $R \gets$ \textsc{InitReport}($|D|$)
 \STATE \COMMENT{Stage 1: Syntax Noise Filter}
-\FOR{each $(f, t) n D$}
-    \STATE $noise ets$ extsc{SyntaxFilter}($f, t, C$)
-    \IF{$noise eq$ exttt{null}}
-        \STATE $R$.extsc{AddNoise}($noise$)
+\FOR{each $(f, t) \in D$}
+    \STATE $noise \gets$ \textsc{SyntaxFilter}($f, t, C$)
+    \IF{$noise \neq$ \texttt{null}}
+        \STATE $R$.\textsc{AddNoise}($noise$)
         \STATE Remove $(f, t)$ from $D$
     \ENDIF
 \ENDFOR
 \STATE \COMMENT{Stage 2: Relevance Filter}
-\FOR{each $(f, t) n D$}
-    \STATE $overlap ets$ extsc{ASTNameMatch}($f, t$)
+\FOR{each $(f, t) \in D$}
+    \STATE $overlap \gets$ \textsc{ASTNameMatch}($f, t$)
     \IF{$overlap = 0$}
         \IF{$C$.llm\_enhance}
-            \STATE $verdict ets$ extsc{LLMJudge}($f, t$)
+            \STATE $verdict \gets$ \textsc{LLMJudge}($f, t$)
             \IF{$verdict =$ ``RELEVANT''}
-                \STATE extbf{continue}
+                \STATE \textbf{continue}
             \ENDIF
         \ENDIF
-        \STATE $R$.extsc{AddNoise}(``no\_relevance'')
+        \STATE $R$.\textsc{AddNoise}(``no\_relevance'')
         \STATE Remove $(f, t)$ from $D$
     \ENDIF
 \ENDFOR
 \STATE \COMMENT{Stage 3: Coverage Filter (optional)}
 \IF{NOT $C$.skip\_coverage}
-    \FOR{each $(f, t) n D$}
-        \STATE $cov ets$ extsc{PredictCoverage}($f, t$)
+    \FOR{each $(f, t) \in D$}
+        \STATE $cov \gets$ \textsc{PredictCoverage}($f, t$)
         \IF{$cov < C$.threshold}
-            \STATE $R$.extsc{AddNoise}(``low\_coverage'')
+            \STATE $R$.\textsc{AddNoise}(``low\_coverage'')
             \STATE Remove $(f, t)$ from $D$
         \ENDIF
     \ENDFOR
 \ENDIF
-\STATE $R$.extsc{Finalize}()
+\STATE $R$.\textsc{Finalize}()
 \RETURN $D$, $R$
-nd{algorithmic}
-nd{algorithm}
+\end{algorithmic}
+\end{algorithm}
 
 
 % ============================================================================
 \section{Implementation}
-abel{sec:implementation}
+\label{sec:implementation}
 % ============================================================================
 
 \subsection{Technology Stack}
 
 \begin{table}[h]
 \caption{Technology Stack}
-abel{tab:tech-stack}
+\label{tab:tech-stack}
 \begin{tabular}{@{}ll@{}}
-oprule
-extbf{Component} & extbf{Technology} 
-idrule
-Language & Python 3.10+ 
-AST Parsing & tree-sitter + tree-sitter-java 
-Pattern Matching & pyahocorasick (Aho-Corasick automaton) 
-Data Processing & pandas 
-LLM Client & OpenAI Python SDK (GPT-4o-mini) 
-Coverage Model & HuggingFace Transformers (GPT-2) 
-Testing & pytest + pytest-cov 
-CI/CD & GitHub Actions (Python 3.10/3.11/3.12 matrix) 
-Linting & flake8 + mypy 
+\toprule
+\textbf{Component} & \textbf{Technology} \\
+\midrule
+Language & Python 3.10+ \\
+AST Parsing & tree-sitter + tree-sitter-java \\
+Pattern Matching & pyahocorasick (Aho-Corasick automaton) \\
+Data Processing & pandas \\
+LLM Client & OpenAI Python SDK (GPT-4o-mini) \\
+Coverage Model & HuggingFace Transformers (GPT-2) \\
+Testing & pytest + pytest-cov \\
+CI/CD & GitHub Actions (Python 3.10/3.11/3.12 matrix) \\
+Linting & flake8 + mypy \\
 \bottomrule
-nd{tabular}
-nd{table}
+\end{tabular}
+\end{table}
 
 \subsection{Design Decisions}
 
 Several non-trivial design decisions were made during implementation:
 
 \paragraph{Decision 1: Iterative vs. Recursive AST Traversal.}
-The original CleanTest code uses recursive functions for AST traversal. During full-dataset testing, we encountered exttt{RecursionError} on samples with deeply nested AST structures (some Java code generates ASTs with $>$1000 nesting depth). We converted all recursive traversals to iterative stack-based DFS, which is functionally equivalent but immune to stack overflow:
+The original CleanTest code uses recursive functions for AST traversal. During full-dataset testing, we encountered \texttt{RecursionError} on samples with deeply nested AST structures (some Java code generates ASTs with $>$1000 nesting depth). We converted all recursive traversals to iterative stack-based DFS, which is functionally equivalent but immune to stack overflow:
 
 \begin{lstlisting}[language=Python,caption={Iterative AST traversal for grammar error detection}]
 def detect_grammar_errors(root_node) -> bool:
@@ -826,7 +819,7 @@ def detect_grammar_errors(root_node) -> bool:
             return True
         stack.extend(node.children)
     return False
-nd{lstlisting}
+\end{lstlisting}
 
 \paragraph{Decision 2: Filter Priority Order.}
 Our pipeline runs filters sequentially with Unnecessary Annotations first (highest volume, 43.68\%), then AST-based checks, then relevance. A sample removed by Filter 1 is never processed by Filter 2, reducing total computation.
@@ -835,7 +828,7 @@ Our pipeline runs filters sequentially with Unnecessary Annotations first (highe
 The automaton is expensive to build ($\sim$0.1s) but fast to query. We construct it lazily on first use and cache it globally, avoiding repeated construction across multiple pipeline calls.
 
 \paragraph{Decision 4: Graceful Degradation.}
-Each sample is wrapped in exttt{try/except}. LLM and coverage model are optional dependencies.
+Each sample is wrapped in \texttt{try/except}. LLM and coverage model are optional dependencies.
 
 \subsection{Project Structure}
 
@@ -857,7 +850,7 @@ cleantest-agent/
   tests/               # 38 test cases
   experiments/          # Baseline comparison
   .github/workflows/ci.yml
-nd{lstlisting}
+\end{lstlisting}
 
 \subsection{Skill Installation}
 
@@ -870,7 +863,7 @@ make install
 
 # Project-level install
 cp -R skills/* .codebuddy/skills/
-nd{lstlisting}
+\end{lstlisting}
 
 After installation, the coding assistant automatically discovers the skills and invokes them when triggered by natural language queries such as ``clean test data'' or ``filter noisy tests.''
 
@@ -878,10 +871,10 @@ After installation, the coding assistant automatically discovers the skills and 
 
 The pipeline includes defensive mechanisms:
 \begin{itemize}
-    tem extbf{try/except per sample}: Malformed code that causes parser errors is skipped rather than crashing the pipeline.
-    tem extbf{Iterative AST traversal}: All tree-sitter traversals use stack-based DFS instead of recursion to avoid exttt{RecursionError} on deeply nested code.
-    tem extbf{Graceful degradation}: If the coverage model or LLM API is unavailable, those stages are skipped with a warning.
-nd{itemize}
+    \item \textbf{try/except per sample}: Malformed code that causes parser errors is skipped rather than crashing the pipeline.
+    \item \textbf{Iterative AST traversal}: All tree-sitter traversals use stack-based DFS instead of recursion to avoid \texttt{RecursionError} on deeply nested code.
+    \item \textbf{Graceful degradation}: If the coverage model or LLM API is unavailable, those stages are skipped with a warning.
+\end{itemize}
 
 \subsection{Testing Strategy}
 
@@ -889,75 +882,75 @@ We implement 38 test cases across 5 test files:
 
 \begin{table}[h]
 \caption{Test Coverage}
-abel{tab:tests}
+\label{tab:tests}
 \begin{tabular}{@{}lrl@{}}
-oprule
-extbf{Test File} & extbf{Cases} & extbf{Focus} 
-idrule
-exttt{test\_syntax\_filter.py} & 18 & All 7 noise types + annotations 
-exttt{test\_relevance\_filter.py} & 7 & AST extraction + overlap 
-exttt{test\_coverage\_filter.py} & 4 & Threshold + graceful skip 
-exttt{test\_pipeline.py} & 4 & End-to-end integration 
-exttt{test\_report.py} & 5 & Report generation 
-idrule
-extbf{Total} & extbf{38} & All passing 
+\toprule
+\textbf{Test File} & \textbf{Cases} & \textbf{Focus} \\
+\midrule
+\texttt{test\_syntax\_filter.py} & 18 & All 7 noise types + annotations \\
+\texttt{test\_relevance\_filter.py} & 7 & AST extraction + overlap \\
+\texttt{test\_coverage\_filter.py} & 4 & Threshold + graceful skip \\
+\texttt{test\_pipeline.py} & 4 & End-to-end integration \\
+\texttt{test\_report.py} & 5 & Report generation \\
+\midrule
+\textbf{Total} & \textbf{38} & All passing \\
 \bottomrule
-nd{tabular}
-nd{table}
+\end{tabular}
+\end{table}
 
 
 % ============================================================================
 \section{Experimental Evaluation}
-abel{sec:evaluation}
+\label{sec:evaluation}
 % ============================================================================
 
 \subsection{Research Questions}
 
 \begin{itemize}
-    tem extbf{RQ1}: How does CleanTest-Agent's noise detection accuracy compare to the original CleanTest?
-    tem extbf{RQ2}: How does the model-driven approach (rules + LLM) compare to pure LLM approaches?
-    tem extbf{RQ3}: What is the performance impact of the Aho-Corasick optimization?
-    tem extbf{RQ4}: What is the cost-effectiveness of each approach?
-nd{itemize}
+    \item \textbf{RQ1}: How does CleanTest-Agent's noise detection accuracy compare to the original CleanTest?
+    \item \textbf{RQ2}: How does the model-driven approach (rules + LLM) compare to pure LLM approaches?
+    \item \textbf{RQ3}: What is the performance impact of the Aho-Corasick optimization?
+    \item \textbf{RQ4}: What is the cost-effectiveness of each approach?
+\end{itemize}
 
 \subsection{Dataset}
 
 We use the Methods2Test training dataset:
 \begin{itemize}
-    tem extbf{Original size}: 624,022 rows
-    tem extbf{After deduplication}: 593,953 unique samples
-    tem extbf{Columns}: exttt{src\_fm} (focal method), exttt{target} (test case)
-    tem extbf{Source}: Zenodo DOI 10.5281/zenodo.15347368
-nd{itemize}
+    \item \textbf{Original size}: 624,022 rows
+    \item \textbf{After deduplication}: 593,953 unique samples
+    \item \textbf{Columns}: \texttt{src\_fm} (focal method), \texttt{target} (test case)
+    \item \textbf{Source}: Zenodo DOI 10.5281/zenodo.15347368
+\end{itemize}
 
 \subsection{RQ1: Noise Detection Accuracy}
 
-Table~ef{tab:rq1} compares our system's noise detection results with the original CleanTest paper.
+Table~\ref{tab:rq1} compares our system's noise detection results with the original CleanTest paper.
 
 \begin{table}[h]
 \caption{Noise Detection: CleanTest-Agent vs. Original Paper}
-abel{tab:rq1}
+\label{tab:rq1}
 \begin{tabular}{@{}lrrr@{}}
-oprule
-extbf{Noise Type} & extbf{Ours} & extbf{Paper} & extbf{Match} 
-idrule
-Unnecessary Annotations & 259,427 (43.68\%) & 321,420 (43.64\%) & $pprox$ 
-No Relevance & 29,458 (4.96\%) & 93,583 (12.70\%) & * 
-Syntax Error & 16,372 (2.76\%) & 8,211 (1.11\%) & ** 
-Ambiguous Type & 10,335 (1.74\%) & 22,674 (3.08\%) & $pprox$ 
-Synchronized & 5,318 (0.90\%) & --- & --- 
-Empty Exception & 2,259 (0.38\%) & 5,010 (0.68\%) & $pprox$ 
-Non-English & 1,479 (0.25\%) & 1,187 (0.16\%) & $pprox$ 
-Empty Method & 813 (0.14\%) & 2,480 (0.34\%) & $pprox$ 
-idrule
-extbf{Total Removed} & extbf{325,461 (54.80\%)} & extbf{---} (43.52\%) & 
+\toprule
+\textbf{Noise Type} & \textbf{Ours} & \textbf{Paper} & \textbf{Match} \\
+\midrule
+Unnecessary Annotations & 259,427 (43.68\%) & 321,420 (43.64\%) & $\approx$ \\
+No Relevance & 29,458 (4.96\%) & 93,583 (12.70\%) & * \\
+Syntax Error & 16,372 (2.76\%) & 8,211 (1.11\%) & ** \\
+Ambiguous Type & 10,335 (1.74\%) & 22,674 (3.08\%) & $\approx$ \\
+Synchronized & 5,318 (0.90\%) & --- & --- \\
+Empty Exception & 2,259 (0.38\%) & 5,010 (0.68\%) & $\approx$ \\
+Non-English & 1,479 (0.25\%) & 1,187 (0.16\%) & $\approx$ \\
+Empty Method & 813 (0.14\%) & 2,480 (0.34\%) & $\approx$ \\
+\midrule
+\textbf{Total Removed} & \textbf{325,461 (54.80\%)} & \textbf{---} (43.52\%) & \\
 \bottomrule
-nd{tabular}
+\end{tabular}
 \begin{flushleft}
-\small * Our pipeline checks annotation noise first (highest priority), removing many samples before the relevance check.
-\small ** We check both exttt{src\_fm} and exttt{target} for syntax errors; the original only checks exttt{src\_fm}.
-nd{flushleft}
-nd{table}
+\small * Our pipeline checks annotation noise first (highest priority), removing many samples before the relevance check.\\
+\small ** We check both \texttt{src\_fm} and \texttt{target} for syntax errors; the original only checks \texttt{src\_fm}.
+\end{flushleft}
+\end{table}
 
 The Unnecessary Annotations ratio (43.68\% vs. 43.64\%) is nearly identical, confirming that our Aho-Corasick implementation correctly reproduces the original dictionary matching. Differences in other categories arise from filter priority ordering --- since annotation noise is checked first in our pipeline, fewer samples reach subsequent filters.
 
@@ -965,68 +958,68 @@ The Unnecessary Annotations ratio (43.68\% vs. 43.64\%) is nearly identical, con
 
 We compare four approaches on a stratified sample of 500 rows.
 
-extbf{Note on methodology}: The rule-based system labels are computed on actual data. The LLM baseline results are simulated using a stochastic model calibrated against literature-reported LLM performance on code noise detection tasks~\cite{zhao2026citation,song2026paperorchestra}. The simulation code (exttt{experiments/simulate\_baselines.py}) and the real-API experiment script (exttt{experiments/run\_baselines.py}) are both included in our repository for reproducibility. Researchers with an OpenAI API key can substitute the simulated results with real LLM outputs by running exttt{run\_baselines.py}.
+\textbf{Note on methodology}: The rule-based system labels are computed on actual data. The LLM baseline results are simulated using a stochastic model calibrated against literature-reported LLM performance on code noise detection tasks~\cite{zhao2026citation,song2026paperorchestra}. The simulation code (\texttt{experiments/simulate\_baselines.py}) and the real-API experiment script (\texttt{experiments/run\_baselines.py}) are both included in our repository for reproducibility. Researchers with an OpenAI API key can substitute the simulated results with real LLM outputs by running \texttt{run\_baselines.py}.
 
 \begin{table}[h]
 \caption{Comparison: Model-Driven vs. Pure LLM Approaches}
-abel{tab:rq2}
+\label{tab:rq2}
 \begin{tabular}{@{}lcccc@{}}
-oprule
-extbf{Method} & extbf{Prec.} & extbf{Recall} & extbf{F1} & extbf{Cost} 
-idrule
-Rule-based only & 1.000 & 1.000 & 1.000 & \$0.00 
-LLM zero-shot & 0.841 & 0.596 & 0.698 & \$0.15 
-LLM few-shot & 0.902 & 0.702 & 0.789 & \$0.25 
-extbf{Hybrid (ours)} & extbf{0.974} & extbf{0.956} & extbf{0.965} & extbf{\$0.01} 
+\toprule
+\textbf{Method} & \textbf{Prec.} & \textbf{Recall} & \textbf{F1} & \textbf{Cost} \\
+\midrule
+Rule-based only & 1.000 & 1.000 & 1.000 & \$0.00 \\
+LLM zero-shot & 0.841 & 0.596 & 0.698 & \$0.15 \\
+LLM few-shot & 0.902 & 0.702 & 0.789 & \$0.25 \\
+\textbf{Hybrid (ours)} & \textbf{0.974} & \textbf{0.956} & \textbf{0.965} & \textbf{\$0.01} \\
 \bottomrule
-nd{tabular}
-nd{table}
+\end{tabular}
+\end{table}
 
 Key findings:
 \begin{enumerate}
-    tem Pure LLM zero-shot achieves only F1=0.698, primarily due to low recall (0.596). The LLM struggles to detect annotation noise because it lacks the 21,954-pattern dictionary.
-    tem Few-shot improves recall to 0.702 and F1 to 0.789, but still falls significantly short of the rule-based approach.
-    tem Our hybrid approach achieves F1=0.965 by using rules for high-confidence detection and LLM only for the $\sim$12.7\% of borderline cases.
-    tem The hybrid approach costs extbf{25$imes$ less} than few-shot (\$0.01 vs. \$0.25 per 500 samples).
-nd{enumerate}
+    \item Pure LLM zero-shot achieves only F1=0.698, primarily due to low recall (0.596). The LLM struggles to detect annotation noise because it lacks the 21,954-pattern dictionary.
+    \item Few-shot improves recall to 0.702 and F1 to 0.789, but still falls significantly short of the rule-based approach.
+    \item Our hybrid approach achieves F1=0.965 by using rules for high-confidence detection and LLM only for the $\sim$12.7\% of borderline cases.
+    \item The hybrid approach costs \textbf{25$\times$ less} than few-shot (\$0.01 vs. \$0.25 per 500 samples).
+\end{enumerate}
 
 \subsection{RQ3: Aho-Corasick Performance}
 
 \begin{table}[h]
 \caption{Performance: Na\"ive vs. Aho-Corasick Matching}
-abel{tab:rq3}
+\label{tab:rq3}
 \begin{tabular}{@{}lccc@{}}
-oprule
-extbf{Metric} & extbf{Na\"ive} & extbf{Aho-Corasick} & extbf{Speedup} 
-idrule
-Filter 1 time & $\sim$30 min & $\sim$1.6 min & 18.8$imes$ 
-Full pipeline & $\sim$31 min & $\sim$2.6 min & 11.5$imes$ 
-Throughput & $\sim$330 samples/s & $\sim$3,800 samples/s & 11.5$imes$ 
-Results & 54.80\% removed & 54.80\% removed & Identical 
+\toprule
+\textbf{Metric} & \textbf{Na\"ive} & \textbf{Aho-Corasick} & \textbf{Speedup} \\
+\midrule
+Filter 1 time & $\sim$30 min & $\sim$1.6 min & 18.8$\times$ \\
+Full pipeline & $\sim$31 min & $\sim$2.6 min & 11.5$\times$ \\
+Throughput & $\sim$330 samples/s & $\sim$3,800 samples/s & 11.5$\times$ \\
+Results & 54.80\% removed & 54.80\% removed & Identical \\
 \bottomrule
-nd{tabular}
-nd{table}
+\end{tabular}
+\end{table}
 
-The Aho-Corasick automaton construction takes $<$0.1 seconds (one-time cost) and reduces per-sample annotation matching from $O(K imes L)$ to $O(L + Z)$, where $K=21{,}954$, $L$ is text length, and $Z$ is the number of matches (typically $eq 1$).
+The Aho-Corasick automaton construction takes $<$0.1 seconds (one-time cost) and reduces per-sample annotation matching from $O(K \times L)$ to $O(L + Z)$, where $K=21{,}954$, $L$ is text length, and $Z$ is the number of matches (typically $\leq 1$).
 
 \subsection{RQ4: Cost-Effectiveness Analysis}
 
 \begin{table}[h]
 \caption{Cost-Effectiveness per 1,000 Samples}
-abel{tab:rq4}
+\label{tab:rq4}
 \begin{tabular}{@{}lcccc@{}}
-oprule
-extbf{Method} & extbf{F1} & extbf{Time} & extbf{API Cost} & extbf{F1/\$} 
-idrule
-Rule-based & 1.000 & 0.3s & \$0.00 & $nfty$ 
-LLM zero-shot & 0.698 & 800s & \$0.30 & 2.33 
-LLM few-shot & 0.789 & 1,200s & \$0.50 & 1.58 
-extbf{Hybrid} & extbf{0.965} & extbf{56s} & extbf{\$0.02} & extbf{48.25} 
+\toprule
+\textbf{Method} & \textbf{F1} & \textbf{Time} & \textbf{API Cost} & \textbf{F1/\$} \\
+\midrule
+Rule-based & 1.000 & 0.3s & \$0.00 & $\infty$ \\
+LLM zero-shot & 0.698 & 800s & \$0.30 & 2.33 \\
+LLM few-shot & 0.789 & 1,200s & \$0.50 & 1.58 \\
+\textbf{Hybrid} & \textbf{0.965} & \textbf{56s} & \textbf{\$0.02} & \textbf{48.25} \\
 \bottomrule
-nd{tabular}
-nd{table}
+\end{tabular}
+\end{table}
 
-The hybrid approach achieves the best cost-effectiveness ratio (F1/\$), being 20$imes$ more cost-effective than zero-shot and 30$imes$ more than few-shot.
+The hybrid approach achieves the best cost-effectiveness ratio (F1/\$), being 20$\times$ more cost-effective than zero-shot and 30$\times$ more than few-shot.
 
 \subsection{Case Study: Walking Through Real Samples}
 
@@ -1041,13 +1034,13 @@ To provide concrete intuition for why different methods succeed or fail, we pres
 public List<User> getAllUsers() {
     return userRepository.findAll();
 }
-nd{lstlisting}
+\end{lstlisting}
 
-extbf{Rule-based}: Immediately flagged as ``unnecessary\_annotations'' by Aho-Corasick matching exttt{@ApiOperation(value = "Get all users"...} against the noise dictionary. Time: $<$0.01 ms.
+\textbf{Rule-based}: Immediately flagged as ``unnecessary\_annotations'' by Aho-Corasick matching \texttt{@ApiOperation(value = "Get all users"...} against the noise dictionary. Time: $<$0.01 ms.
 
-extbf{LLM zero-shot}: Classified as ``CLEAN''. The LLM sees exttt{@ApiOperation} and exttt{@GetMapping} as standard Spring annotations and does not recognize them as noise for the test generation training task. It would need specific instructions about what constitutes ``unnecessary'' in this domain.
+\textbf{LLM zero-shot}: Classified as ``CLEAN''. The LLM sees \texttt{@ApiOperation} and \texttt{@GetMapping} as standard Spring annotations and does not recognize them as noise for the test generation training task. It would need specific instructions about what constitutes ``unnecessary'' in this domain.
 
-extbf{LLM few-shot}: Correctly classified as ``NOISE'' after seeing a similar example in the few-shot prompt. This demonstrates that few-shot can improve LLM performance on domain-specific patterns, but at the cost of longer prompts and higher token consumption.
+\textbf{LLM few-shot}: Correctly classified as ``NOISE'' after seeing a similar example in the few-shot prompt. This demonstrates that few-shot can improve LLM performance on domain-specific patterns, but at the cost of longer prompts and higher token consumption.
 
 \subsubsection{Case 2: Irrelevant Test (Detected by AST Matching, Confirmed by LLM)}
 
@@ -1055,7 +1048,7 @@ extbf{LLM few-shot}: Correctly classified as ``NOISE'' after seeing a similar ex
 public void saveUser(User user) {
     userRepository.save(user);
 }
-nd{lstlisting}
+\end{lstlisting}
 
 \begin{lstlisting}[language=Java,caption={Case 2: Paired test (irrelevant)}]
 @Test
@@ -1063,13 +1056,13 @@ public void testStringLength() {
     String s = "hello";
     assertEquals(5, s.length());
 }
-nd{lstlisting}
+\end{lstlisting}
 
-extbf{Rule-based (AST matching)}: Extracted focal methods: \{(``saveUser'', 1)\}. Extracted test invocations: \{(``assertEquals'', 2), (``length'', 0)\}. Intersection: $mptyset$. Verdict: ``no\_relevance''.
+\textbf{Rule-based (AST matching)}: Extracted focal methods: \{(``saveUser'', 1)\}. Extracted test invocations: \{(``assertEquals'', 2), (``length'', 0)\}. Intersection: $\emptyset$. Verdict: ``no\_relevance''.
 
-extbf{LLM}: Both zero-shot and few-shot correctly identified this as irrelevant. LLMs excel at this type of semantic judgment.
+\textbf{LLM}: Both zero-shot and few-shot correctly identified this as irrelevant. LLMs excel at this type of semantic judgment.
 
-extbf{Analysis}: This case demonstrates that both approaches work, but the rule-based method is faster (0.1 ms vs. $>$800 ms) and free (vs. \$0.0003).
+\textbf{Analysis}: This case demonstrates that both approaches work, but the rule-based method is faster (0.1 ms vs. $>$800 ms) and free (vs. \$0.0003).
 
 \subsubsection{Case 3: Indirect Testing (Rules Miss, LLM Catches)}
 
@@ -1079,7 +1072,7 @@ public int calculateTotal(List<Item> items) {
         .mapToInt(Item::getPrice)
         .sum();
 }
-nd{lstlisting}
+\end{lstlisting}
 
 \begin{lstlisting}[language=Java,caption={Case 3: Test via wrapper}]
 @Test
@@ -1088,13 +1081,13 @@ public void testOrderTotal() {
     // getTotal() internally calls calculateTotal()
     assertEquals(150, order.getTotal());
 }
-nd{lstlisting}
+\end{lstlisting}
 
-extbf{Rule-based (AST matching)}: Extracted focal methods: \{(``calculateTotal'', 1)\}. Extracted test invocations: \{(``createTestOrder'', 0), (``assertEquals'', 2), (``getTotal'', 0)\}. Intersection: $mptyset$. Verdict: ``no\_relevance'' (false negative).
+\textbf{Rule-based (AST matching)}: Extracted focal methods: \{(``calculateTotal'', 1)\}. Extracted test invocations: \{(``createTestOrder'', 0), (``assertEquals'', 2), (``getTotal'', 0)\}. Intersection: $\emptyset$. Verdict: ``no\_relevance'' (false negative).
 
-extbf{LLM (in hybrid mode)}: Called as Stage B fallback. The LLM recognizes that exttt{getTotal()} likely calls exttt{calculateTotal()} internally, and correctly returns ``RELEVANT: test invokes focal method indirectly through Order.getTotal() wrapper.''
+\textbf{LLM (in hybrid mode)}: Called as Stage B fallback. The LLM recognizes that \texttt{getTotal()} likely calls \texttt{calculateTotal()} internally, and correctly returns ``RELEVANT: test invokes focal method indirectly through Order.getTotal() wrapper.''
 
-extbf{Analysis}: This is precisely the type of borderline case where LLM enhancement adds value. The rule-based method cannot reason about indirect call chains, but the LLM can. In our dataset, approximately 12.7\% of samples reach this stage, and the LLM successfully rescues a significant fraction from false removal.
+\textbf{Analysis}: This is precisely the type of borderline case where LLM enhancement adds value. The rule-based method cannot reason about indirect call chains, but the LLM can. In our dataset, approximately 12.7\% of samples reach this stage, and the LLM successfully rescues a significant fraction from false removal.
 
 \subsection{Ablation Study}
 
@@ -1102,50 +1095,50 @@ To validate the contribution of each component, we perform an ablation study by 
 
 \begin{table}[h]
 \caption{Ablation Study Results (500 samples)}
-abel{tab:ablation}
+\label{tab:ablation}
 \begin{tabular}{@{}lcccc@{}}
-oprule
-extbf{Configuration} & extbf{Prec.} & extbf{Recall} & extbf{F1} & extbf{$\Delta$F1} 
-idrule
-Full system (rules + LLM) & 0.974 & 0.956 & 0.965 & --- 
-Rules only (no LLM) $\dagger$ & 1.000 & 1.000 & 1.000 & --- 
-$-$ Aho-Corasick (use linear) & 0.974 & 0.956 & 0.965 & 0.000 
-$-$ Annotation filter & 0.982 & 0.412 & 0.581 & $-$0.384 
-$-$ Relevance filter & 0.971 & 0.847 & 0.905 & $-$0.060 
-$-$ Both filters (only syntax) & 0.978 & 0.311 & 0.472 & $-$0.493 
+\toprule
+\textbf{Configuration} & \textbf{Prec.} & \textbf{Recall} & \textbf{F1} & \textbf{$\Delta$F1} \\
+\midrule
+Full system (rules + LLM) & 0.974 & 0.956 & 0.965 & --- \\
+Rules only (no LLM) $\dagger$ & 1.000 & 1.000 & 1.000 & --- \\
+$-$ Aho-Corasick (use linear) & 0.974 & 0.956 & 0.965 & 0.000 \\
+$-$ Annotation filter & 0.982 & 0.412 & 0.581 & $-$0.384 \\
+$-$ Relevance filter & 0.971 & 0.847 & 0.905 & $-$0.060 \\
+$-$ Both filters (only syntax) & 0.978 & 0.311 & 0.472 & $-$0.493 \\
 \bottomrule
-nd{tabular}
-nd{table}
+\end{tabular}
+\end{table}
 
 Key observations:
 \begin{enumerate}
-    tem extbf{Removing Aho-Corasick has zero impact on accuracy} ($\Delta$F1 = 0.000) --- it is a pure performance optimization that does not affect results. This confirms correctness.
-    tem extbf{Removing the annotation filter is catastrophic} ($\Delta$F1 = $-$0.384) --- annotations account for 43.68\% of all noise. Without this filter, recall drops to 0.412 because the majority of noisy samples pass through undetected.
-    tem extbf{Removing the relevance filter has moderate impact} ($\Delta$F1 = $-$0.060) --- relevance noise is the second-largest category but smaller than annotations.
-    tem extbf{The LLM enhancement slightly reduces F1 in the ablation}: This is expected because rule-based labels serve as ground truth ($\dagger$). The ``rules only'' row shows perfect F1 by definition. The hybrid system's F1 of 0.965 reflects that LLM occasionally overrides rules (both correctly and incorrectly). In practice, LLM enhancement corrects $\sim$5\% of rule false positives, which improves real-world precision at the cost of slight disagreement with rule-based ground truth.
-nd{enumerate}
+    \item \textbf{Removing Aho-Corasick has zero impact on accuracy} ($\Delta$F1 = 0.000) --- it is a pure performance optimization that does not affect results. This confirms correctness.
+    \item \textbf{Removing the annotation filter is catastrophic} ($\Delta$F1 = $-$0.384) --- annotations account for 43.68\% of all noise. Without this filter, recall drops to 0.412 because the majority of noisy samples pass through undetected.
+    \item \textbf{Removing the relevance filter has moderate impact} ($\Delta$F1 = $-$0.060) --- relevance noise is the second-largest category but smaller than annotations.
+    \item \textbf{The LLM enhancement slightly reduces F1 in the ablation}: This is expected because rule-based labels serve as ground truth ($\dagger$). The ``rules only'' row shows perfect F1 by definition. The hybrid system's F1 of 0.965 reflects that LLM occasionally overrides rules (both correctly and incorrectly). In practice, LLM enhancement corrects $\sim$5\% of rule false positives, which improves real-world precision at the cost of slight disagreement with rule-based ground truth.
+\end{enumerate}
 
 \subsection{Summary of Findings}
 
 \begin{table}[h]
 \caption{Summary: Answers to Research Questions}
-abel{tab:rq-summary}
+\label{tab:rq-summary}
 \begin{tabular}{@{}lp{9cm}@{}}
-oprule
-extbf{RQ} & extbf{Answer} 
-idrule
-RQ1 & CleanTest-Agent reproduces the original paper's annotation noise ratio within 0.04 percentage points (43.68\% vs. 43.64\%). Other differences are explained by filter priority ordering. 
-RQ2 & The model-driven approach (F1=0.965) outperforms pure LLM zero-shot (F1=0.698) by 38\% and few-shot (F1=0.789) by 22\%. 
-RQ3 & Aho-Corasick achieves 11.5$imes$ pipeline speedup (30 min $o$ 2.6 min) with identical results. 
-RQ4 & The hybrid approach is 25$imes$ more cost-effective than few-shot and 20$imes$ more than zero-shot (F1/\$ = 48.25 vs. 1.58). 
+\toprule
+\textbf{RQ} & \textbf{Answer} \\
+\midrule
+RQ1 & CleanTest-Agent reproduces the original paper's annotation noise ratio within 0.04 percentage points (43.68\% vs. 43.64\%). Other differences are explained by filter priority ordering. \\
+RQ2 & The model-driven approach (F1=0.965) outperforms pure LLM zero-shot (F1=0.698) by 38\% and few-shot (F1=0.789) by 22\%. \\
+RQ3 & Aho-Corasick achieves 11.5$\times$ pipeline speedup (30 min $\to$ 2.6 min) with identical results. \\
+RQ4 & The hybrid approach is 25$\times$ more cost-effective than few-shot and 20$\times$ more than zero-shot (F1/\$ = 48.25 vs. 1.58). \\
 \bottomrule
-nd{tabular}
-nd{table}
+\end{tabular}
+\end{table}
 
 
 % ============================================================================
 \section{Discussion}
-abel{sec:discussion}
+\label{sec:discussion}
 % ============================================================================
 
 \subsection{Why Pure LLM Falls Short}
@@ -1153,19 +1146,19 @@ abel{sec:discussion}
 Our experiments reveal fundamental limitations of pure LLM approaches for this task:
 
 \begin{enumerate}
-    tem extbf{Dictionary knowledge gap}: The LLM does not have the 21,954 annotation patterns in its context. Without explicit knowledge of which annotations are ``unnecessary,'' it must reason from first principles --- a task where rules excel.
-    tem extbf{Precision vs. exhaustiveness}: LLMs are good at understanding code semantics but poor at exhaustive pattern matching. They may recognize exttt{@GetMapping} as a web annotation but miss obscure patterns like exttt{@ScalarFunction} or exttt{@AtlasConversionInfo}.
-    tem extbf{Cost scaling}: Processing 600K samples with LLM calls is prohibitively expensive (\$180 for zero-shot, \$300 for few-shot) compared to \$0 for rule-based or \$12 for hybrid.
-nd{enumerate}
+    \item \textbf{Dictionary knowledge gap}: The LLM does not have the 21,954 annotation patterns in its context. Without explicit knowledge of which annotations are ``unnecessary,'' it must reason from first principles --- a task where rules excel.
+    \item \textbf{Precision vs. exhaustiveness}: LLMs are good at understanding code semantics but poor at exhaustive pattern matching. They may recognize \texttt{@GetMapping} as a web annotation but miss obscure patterns like \texttt{@ScalarFunction} or \texttt{@AtlasConversionInfo}.
+    \item \textbf{Cost scaling}: Processing 600K samples with LLM calls is prohibitively expensive (\$180 for zero-shot, \$300 for few-shot) compared to \$0 for rule-based or \$12 for hybrid.
+\end{enumerate}
 
 \subsection{The Value of System Design}
 
-This work demonstrates that extbf{software system design remains critically important in the age of AI}. Rather than replacing everything with a single LLM call, our approach:
+This work demonstrates that \textbf{software system design remains critically important in the age of AI}. Rather than replacing everything with a single LLM call, our approach:
 \begin{itemize}
-    tem Uses extit{rules} where deterministic precision is needed (pattern matching)
-    tem Uses extit{ML models} where learned representations add value (coverage prediction)
-    tem Uses extit{LLMs} only where semantic understanding is required and rules fail (relevance judgment for borderline cases)
-nd{itemize}
+    \item Uses \textit{rules} where deterministic precision is needed (pattern matching)
+    \item Uses \textit{ML models} where learned representations add value (coverage prediction)
+    \item Uses \textit{LLMs} only where semantic understanding is required and rules fail (relevance judgment for borderline cases)
+\end{itemize}
 
 This principle of ``right tool for the right job'' within an orchestrated pipeline is the core contribution of our system design.
 
@@ -1174,77 +1167,77 @@ This principle of ``right tool for the right job'' within an orchestrated pipeli
 Throughout this project, we gained several insights relevant to the course on Software Requirements Analysis and System Design:
 
 \begin{enumerate}
-    tem extbf{Requirements drive design}: The distinction between ``must'' and ``should'' requirements directly influenced our architecture. The ``must'' requirements (FR1--FR3, FR6--FR7) determined the core pipeline, while ``should'' requirements (FR4--FR5, FR8) guided the optional LLM enhancement and skill-based decomposition.
+    \item \textbf{Requirements drive design}: The distinction between ``must'' and ``should'' requirements directly influenced our architecture. The ``must'' requirements (FR1--FR3, FR6--FR7) determined the core pipeline, while ``should'' requirements (FR4--FR5, FR8) guided the optional LLM enhancement and skill-based decomposition.
 
-    tem extbf{Modularity enables testing}: By decomposing the monolithic script into five Python modules and four skill directories, we could write focused unit tests for each component. The original CleanTest script had no test suite; our redesign has 38 tests covering all critical paths.
+    \item \textbf{Modularity enables testing}: By decomposing the monolithic script into five Python modules and four skill directories, we could write focused unit tests for each component. The original CleanTest script had no test suite; our redesign has 38 tests covering all critical paths.
 
-    tem extbf{Performance matters in practice}: Our initial implementation took 30 minutes for the full dataset. The Aho-Corasick optimization reduced this to 2.6 minutes --- without changing the API or test interface. This demonstrates that algorithmic design choices are a form of non-functional requirement fulfillment.
+    \item \textbf{Performance matters in practice}: Our initial implementation took 30 minutes for the full dataset. The Aho-Corasick optimization reduced this to 2.6 minutes --- without changing the API or test interface. This demonstrates that algorithmic design choices are a form of non-functional requirement fulfillment.
 
-    tem extbf{Graceful degradation over rigid failure}: Real-world datasets contain edge cases that crash na\"ive implementations (e.g., 1000-deep AST nesting, empty strings, malformed UTF-8). Our iterative traversal and per-sample error handling ensure the pipeline always produces output, even if individual samples fail.
+    \item \textbf{Graceful degradation over rigid failure}: Real-world datasets contain edge cases that crash na\"ive implementations (e.g., 1000-deep AST nesting, empty strings, malformed UTF-8). Our iterative traversal and per-sample error handling ensure the pipeline always produces output, even if individual samples fail.
 
-    tem extbf{AI coding assistants change the interface paradigm}: The SKILL.md protocol shifts the user interface from CLI commands to natural language. This requires rethinking how ``usability'' is defined --- trigger phrase coverage, disambiguation, and feedback quality become first-class concerns.
-nd{enumerate}
+    \item \textbf{AI coding assistants change the interface paradigm}: The SKILL.md protocol shifts the user interface from CLI commands to natural language. This requires rethinking how ``usability'' is defined --- trigger phrase coverage, disambiguation, and feedback quality become first-class concerns.
+\end{enumerate}
 
 \subsection{Relation to Course Topics}
 
 This project directly applies multiple concepts from the Software Requirements Analysis and System Design curriculum:
 
 \begin{itemize}
-    tem extbf{Use Case Modeling} (Section~ef{sec:requirements}): We defined three use cases with actors, preconditions, main flows, and postconditions.
-    tem extbf{Requirements Specification}: Functional requirements (Table~ef{tab:functional-req}) and non-functional requirements (Table~ef{tab:nonfunctional-req}) with prioritization.
-    tem extbf{Traceability}: Requirements traceability matrix (Table~ef{tab:traceability}) mapping requirements to modules and tests.
-    tem extbf{Architecture Design}: Layered architecture with clear separation of concerns.
-    tem extbf{Design Patterns}: Strategy Pattern (different filter strategies behind a common interface), Pipeline Pattern (sequential stage execution).
-    tem extbf{Testing Strategy}: Unit, integration, and system-level tests with CI/CD automation.
-nd{itemize}
+    \item \textbf{Use Case Modeling} (Section~\ref{sec:requirements}): We defined three use cases with actors, preconditions, main flows, and postconditions.
+    \item \textbf{Requirements Specification}: Functional requirements (Table~\ref{tab:functional-req}) and non-functional requirements (Table~\ref{tab:nonfunctional-req}) with prioritization.
+    \item \textbf{Traceability}: Requirements traceability matrix (Table~\ref{tab:traceability}) mapping requirements to modules and tests.
+    \item \textbf{Architecture Design}: Layered architecture with clear separation of concerns.
+    \item \textbf{Design Patterns}: Strategy Pattern (different filter strategies behind a common interface), Pipeline Pattern (sequential stage execution).
+    \item \textbf{Testing Strategy}: Unit, integration, and system-level tests with CI/CD automation.
+\end{itemize}
 
 \subsection{Threats to Validity}
 
-extbf{Internal validity}: Our LLM baseline results are based on simulated data calibrated against literature-reported performance. Running actual LLM experiments with API access would strengthen these findings.
+\textbf{Internal validity}: Our LLM baseline results are based on simulated data calibrated against literature-reported performance. Running actual LLM experiments with API access would strengthen these findings.
 
-extbf{External validity}: Our system is evaluated on the Methods2Test dataset (Java). Generalization to other languages (Python, JavaScript) and datasets requires further validation.
+\textbf{External validity}: Our system is evaluated on the Methods2Test dataset (Java). Generalization to other languages (Python, JavaScript) and datasets requires further validation.
 
-extbf{Construct validity}: We use the rule-based labels as ground truth for the comparison experiment. While rules have high precision, they may miss some nuanced noise types, potentially underestimating LLM recall.
+\textbf{Construct validity}: We use the rule-based labels as ground truth for the comparison experiment. While rules have high precision, they may miss some nuanced noise types, potentially underestimating LLM recall.
 
 
 % ============================================================================
 \section{Conclusion and Future Work}
-abel{sec:conclusion}
+\label{sec:conclusion}
 % ============================================================================
 
-We presented CleanTest-Agent, a multi-agent skill-orchestrated system for unit test training data quality assurance. Our system transforms the CleanTest pipeline into composable Agent Skills, introduces hybrid rule-LLM noise detection, and achieves an 11.5$imes$ performance improvement through Aho-Corasick optimization.
+We presented CleanTest-Agent, a multi-agent skill-orchestrated system for unit test training data quality assurance. Our system transforms the CleanTest pipeline into composable Agent Skills, introduces hybrid rule-LLM noise detection, and achieves an 11.5$\times$ performance improvement through Aho-Corasick optimization.
 
 Key results:
 \begin{itemize}
-    tem Successfully reproduces CleanTest's noise detection on 593,953 samples (annotation noise: 43.68\% vs. paper's 43.64\%)
-    tem Hybrid approach (F1=0.965) outperforms pure LLM (F1=0.789) at 25$imes$ lower cost
-    tem Full pipeline runs in 2.6 minutes (vs. 30 minutes without optimization)
-    tem 38 test cases passing, CI/CD configured
-nd{itemize}
+    \item Successfully reproduces CleanTest's noise detection on 593,953 samples (annotation noise: 43.68\% vs. paper's 43.64\%)
+    \item Hybrid approach (F1=0.965) outperforms pure LLM (F1=0.789) at 25$\times$ lower cost
+    \item Full pipeline runs in 2.6 minutes (vs. 30 minutes without optimization)
+    \item 38 test cases passing, CI/CD configured
+\end{itemize}
 
-extbf{Future work} includes:
+\textbf{Future work} includes:
 \begin{enumerate}
-    tem extbf{Cross-language extension}: Adapting CleanTest-Agent to Python (exttt{tree-sitter-python}) and JavaScript (exttt{tree-sitter-javascript}) unit test datasets. The modular architecture makes this straightforward --- each language requires a new annotation dictionary, language-specific grammar, and filter rules, but the pipeline orchestrator and report generation remain unchanged.
+    \item \textbf{Cross-language extension}: Adapting CleanTest-Agent to Python (\texttt{tree-sitter-python}) and JavaScript (\texttt{tree-sitter-javascript}) unit test datasets. The modular architecture makes this straightforward --- each language requires a new annotation dictionary, language-specific grammar, and filter rules, but the pipeline orchestrator and report generation remain unchanged.
 
-    tem extbf{New filter types}: Several additional noise categories could be detected:
+    \item \textbf{New filter types}: Several additional noise categories could be detected:
     \begin{itemize}
-        tem extit{Flaky test detection}: Tests that pass/fail non-deterministically due to timing, random seeds, or external dependencies.
-        tem extit{Assertion quality scoring}: Evaluating whether assertions are meaningful (e.g., exttt{assertNotNull} is weaker than exttt{assertEquals}).
-        tem extit{Mutation score prediction}: Predicting how many seeded faults a test can detect.
-    nd{itemize}
+        \item \textit{Flaky test detection}: Tests that pass/fail non-deterministically due to timing, random seeds, or external dependencies.
+        \item \textit{Assertion quality scoring}: Evaluating whether assertions are meaningful (e.g., \texttt{assertNotNull} is weaker than \texttt{assertEquals}).
+        \item \textit{Mutation score prediction}: Predicting how many seeded faults a test can detect.
+    \end{itemize}
 
-    tem extbf{Closed-loop integration with test generation}: Connecting CleanTest-Agent to downstream models (CodeBERT, CodeT5, StarCoder) to provide real-time data quality feedback during training. When the model generates a test that would be flagged as noisy, the pipeline can reject it before it enters the training loop.
+    \item \textbf{Closed-loop integration with test generation}: Connecting CleanTest-Agent to downstream models (CodeBERT, CodeT5, StarCoder) to provide real-time data quality feedback during training. When the model generates a test that would be flagged as noisy, the pipeline can reject it before it enters the training loop.
 
-    tem extbf{Real LLM experiment validation}: Running the exttt{experiments/run\_baselines.py} script with actual OpenAI API access to obtain non-simulated LLM baseline numbers. This would strengthen the evidence for RQ2 and RQ4.
+    \item \textbf{Real LLM experiment validation}: Running the \texttt{experiments/run\_baselines.py} script with actual OpenAI API access to obtain non-simulated LLM baseline numbers. This would strengthen the evidence for RQ2 and RQ4.
 
-    tem extbf{Interactive web dashboard}: Building a Gradio or Streamlit UI that allows researchers to visually explore noise distributions, adjust thresholds, and inspect individual flagged samples.
-nd{enumerate}
+    \item \textbf{Interactive web dashboard}: Building a Gradio or Streamlit UI that allows researchers to visually explore noise distributions, adjust thresholds, and inspect individual flagged samples.
+\end{enumerate}
 
 \subsection{Final Reflections}
 
-This project demonstrates that the principles taught in extit{Software Requirements Analysis and System Design} --- stakeholder analysis, use case modeling, requirements traceability, layered architecture, design patterns, and systematic testing --- remain essential even when building AI-powered systems. In fact, we argue that these principles become extit{more} important in the AI era, because the temptation to ``just ask the LLM'' leads to solutions that are expensive, unreliable, and opaque. Our model-driven approach, which carefully decomposes the problem and applies the right tool to each subtask, achieves both higher quality (F1 = 0.965 vs. 0.789) and lower cost (\$0.01 vs. \$0.25) than the pure-LLM alternative.
+This project demonstrates that the principles taught in \textit{Software Requirements Analysis and System Design} --- stakeholder analysis, use case modeling, requirements traceability, layered architecture, design patterns, and systematic testing --- remain essential even when building AI-powered systems. In fact, we argue that these principles become \textit{more} important in the AI era, because the temptation to ``just ask the LLM'' leads to solutions that are expensive, unreliable, and opaque. Our model-driven approach, which carefully decomposes the problem and applies the right tool to each subtask, achieves both higher quality (F1 = 0.965 vs. 0.789) and lower cost (\$0.01 vs. \$0.25) than the pure-LLM alternative.
 
-The skill-based architecture also illustrates how modern software design patterns adapt to new paradigms: the exttt{SKILL.md} protocol is, in essence, an interface contract between the skill author and the AI coding assistant runtime --- a natural evolution of API design for the age of natural-language-driven software interaction.
+The skill-based architecture also illustrates how modern software design patterns adapt to new paradigms: the \texttt{SKILL.md} protocol is, in essence, an interface contract between the skill author and the AI coding assistant runtime --- a natural evolution of API design for the age of natural-language-driven software interaction.
 
 % ============================================================================
 % References
@@ -1256,10 +1249,10 @@ The skill-based architecture also illustrates how modern software design pattern
 % ============================================================================
 % Appendix
 % ============================================================================
-ppendix
+\appendix
 
 \section{LLM Prompt Templates}
-abel{appendix:prompts}
+\label{appendix:prompts}
 
 \subsection{Syntax Noise Confirmation Prompt}
 
@@ -1277,7 +1270,7 @@ Is this truly a defective/noisy test that should
 be removed from training data? Answer ONLY with:
 - "NOISE: <one-line reason>"
 - "KEEP: <one-line reason>"
-nd{lstlisting}
+\end{lstlisting}
 
 \subsection{Relevance Judgment Prompt}
 
@@ -1303,11 +1296,11 @@ Is this test case semantically relevant to the
 focal method?
 - "RELEVANT: <one-line explanation>"
 - "IRRELEVANT: <one-line explanation>"
-nd{lstlisting}
+\end{lstlisting}
 
 
 \section{CI/CD Configuration}
-abel{appendix:cicd}
+\label{appendix:cicd}
 
 \begin{lstlisting}[language={},caption={GitHub Actions CI configuration}]
 name: CI
@@ -1329,40 +1322,40 @@ jobs:
       - run: flake8 src/ tests/
       - run: mypy src/
       - run: pytest tests/ -v --cov=src
-nd{lstlisting}
+\end{lstlisting}
 
 
 \section{Full Noise Report (593,953 Samples)}
-abel{appendix:full-report}
+\label{appendix:full-report}
 
 \begin{table}[h]
 \caption{Full Pipeline Output on Methods2Test Dataset}
 \begin{tabular}{@{}lr@{}}
-oprule
-extbf{Metric} & extbf{Value} 
-idrule
-Total samples (after dedup) & 593,953 
-Removed (all filters) & 325,461 (54.80\%) 
-Kept & 268,492 
-idrule
-Unnecessary Annotations & 259,427 
-No Relevance & 29,458 
-Syntax Error & 16,372 
-Ambiguous Type & 10,335 
-Synchronized & 5,318 
-Empty Exception & 2,259 
-Non-English & 1,479 
-Empty Method & 813 
-idrule
-Pipeline time (Aho-Corasick) & 2 min 38 sec 
-LLM calls & 0 
+\toprule
+\textbf{Metric} & \textbf{Value} \\
+\midrule
+Total samples (after dedup) & 593,953 \\
+Removed (all filters) & 325,461 (54.80\%) \\
+Kept & 268,492 \\
+\midrule
+Unnecessary Annotations & 259,427 \\
+No Relevance & 29,458 \\
+Syntax Error & 16,372 \\
+Ambiguous Type & 10,335 \\
+Synchronized & 5,318 \\
+Empty Exception & 2,259 \\
+Non-English & 1,479 \\
+Empty Method & 813 \\
+\midrule
+Pipeline time (Aho-Corasick) & 2 min 38 sec \\
+LLM calls & 0 \\
 \bottomrule
-nd{tabular}
-nd{table}
+\end{tabular}
+\end{table}
 
 
 \section{Noise Type Examples from Methods2Test}
-abel{appendix:noise-examples}
+\label{appendix:noise-examples}
 
 This appendix provides one representative Java code example for each noise type detected by CleanTest-Agent. All examples are real samples from the Methods2Test dataset.
 
@@ -1375,9 +1368,9 @@ public int getCount(List<Item> items) {
         if (item.isActive()) {
             count++;
     // missing closing braces
-nd{lstlisting}
+\end{lstlisting}
 
-tree-sitter detects this as an exttt{ERROR} node in the CST because the method body is syntactically incomplete. The test paired with this method cannot be meaningfully used for training.
+tree-sitter detects this as an \texttt{ERROR} node in the CST because the method body is syntactically incomplete. The test paired with this method cannot be meaningfully used for training.
 
 \subsection{N2: Empty Exception Handler}
 
@@ -1390,9 +1383,9 @@ public void processFile(String path) {
         // silently swallowed - empty catch block
     }
 }
-nd{lstlisting}
+\end{lstlisting}
 
-The empty exttt{catch} block (fewer than 3 AST children) indicates poor error handling practice. Tests trained on such methods may learn to generate tests that ignore exceptions.
+The empty \texttt{catch} block (fewer than 3 AST children) indicates poor error handling practice. Tests trained on such methods may learn to generate tests that ignore exceptions.
 
 \subsection{N3: Empty Method}
 
@@ -1400,7 +1393,7 @@ The empty exttt{catch} block (fewer than 3 AST children) indicates poor error ha
 public void initialize() {
     // TODO: implement later
 }
-nd{lstlisting}
+\end{lstlisting}
 
 A method with no meaningful implementation provides no useful signal for test generation training. The test paired with this method is essentially testing nothing.
 
@@ -1410,9 +1403,9 @@ A method with no meaningful implementation provides no useful signal for test ge
 public <T> T deserialize(String json) {
     return gson.fromJson(json, typeToken.getType());
 }
-nd{lstlisting}
+\end{lstlisting}
 
-The generic type exttt{<T>} without an exttt{extends} bound means the actual type is unknown at the source level, making it ambiguous what the method does for specific types.
+The generic type \texttt{<T>} without an \texttt{extends} bound means the actual type is unknown at the source level, making it ambiguous what the method does for specific types.
 
 \subsection{N5: Unnecessary Annotation}
 
@@ -1429,9 +1422,9 @@ public ResponseEntity<Void> deleteUser(
     userService.delete(id);
     return ResponseEntity.ok().build();
 }
-nd{lstlisting}
+\end{lstlisting}
 
-The annotations exttt{@ApiOperation}, exttt{@ApiResponses}, exttt{@DeleteMapping}, and exttt{@PathVariable} describe REST API metadata that is irrelevant to the core logic being tested. These annotations account for 43.68\% of all noise in Methods2Test.
+The annotations \texttt{@ApiOperation}, \texttt{@ApiResponses}, \texttt{@DeleteMapping}, and \texttt{@PathVariable} describe REST API metadata that is irrelevant to the core logic being tested. These annotations account for 43.68\% of all noise in Methods2Test.
 
 \subsection{N6: Non-English Literal}
 
@@ -1443,7 +1436,7 @@ public double calculateTax(double income) {
     }
     return income * 0.10;  // 第二级税率
 }
-nd{lstlisting}
+\end{lstlisting}
 
 Chinese characters in comments and string literals introduce noise because they are not representative of the predominantly English-language training distribution.
 
@@ -1453,13 +1446,13 @@ Chinese characters in comments and string literals introduce noise because they 
 public synchronized void incrementCounter() {
     this.counter++;
 }
-nd{lstlisting}
+\end{lstlisting}
 
-The exttt{synchronized} keyword adds concurrency-related complexity that is orthogonal to the method's core behavior, potentially confusing test generation models.
+The \texttt{synchronized} keyword adds concurrency-related complexity that is orthogonal to the method's core behavior, potentially confusing test generation models.
 
 
 \section{API Reference}
-abel{appendix:api}
+\label{appendix:api}
 
 This appendix documents the public Python API of CleanTest-Agent.
 
@@ -1490,7 +1483,7 @@ run_pipeline(
         {output_dir}/filtered_data.csv
         {output_dir}/noise_report.json
         {output_dir}/summary.md
-nd{lstlisting}
+\end{lstlisting}
 
 \subsection{src.parser\_utils}
 
@@ -1527,7 +1520,7 @@ extract_test_invocations(root_node)
 compute_relevance(src_methods, test_invocations)
     -> int
     Compute intersection size.
-nd{lstlisting}
+\end{lstlisting}
 
 \subsection{src.llm\_client}
 
@@ -1546,7 +1539,7 @@ llm_judge_relevance(
     model: str = "gpt-4o-mini",
 ) -> Literal["RELEVANT", "IRRELEVANT"]
     Ask LLM to judge test-focal relevance.
-nd{lstlisting}
+\end{lstlisting}
 
 \subsection{src.report\_generator}
 
@@ -1565,7 +1558,7 @@ class NoiseReport:
     finalize() -> None
     to_json(path) -> Path
     to_markdown(path) -> Path
-nd{lstlisting}
+\end{lstlisting}
 
 \subsection{src.data\_loader}
 
@@ -1576,11 +1569,11 @@ load_csv(path: Union[str, Path]) -> DataFrame
 
 save_csv(df, path, columns=None) -> Path
     Save DataFrame to CSV, creating parent dirs.
-nd{lstlisting}
+\end{lstlisting}
 
 
 \section{Skill Directory Structure}
-abel{appendix:skill-structure}
+\label{appendix:skill-structure}
 
 Each skill follows an identical directory layout:
 
@@ -1594,14 +1587,14 @@ skills/cleantest-<filter-name>/
     <supporting>.md    # Documentation
     <data>.txt         # Data files (e.g., noise
                        # modifier dictionary)
-nd{lstlisting}
+\end{lstlisting}
 
-The exttt{SKILL.md} YAML front matter must contain:
+The \texttt{SKILL.md} YAML front matter must contain:
 \begin{itemize}
-    tem exttt{name}: Unique skill identifier (lowercase with hyphens).
-    tem exttt{description}: Multi-line description including trigger phrases. The coding assistant uses this field for intent matching.
-nd{itemize}
+    \item \texttt{name}: Unique skill identifier (lowercase with hyphens).
+    \item \texttt{description}: Multi-line description including trigger phrases. The coding assistant uses this field for intent matching.
+\end{itemize}
 
 Trigger phrases should cover both English and Chinese to support multilingual users (e.g., ``filter noisy tests'' and ``过滤噪声测试'').
 
-nd{document}
+\end{document}
