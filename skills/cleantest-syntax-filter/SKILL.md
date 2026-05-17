@@ -20,18 +20,27 @@ This skill detects 7 types of syntactic noise in Java unit test training data.
 | N2 | Empty Exception | catch/finally with empty block | — |
 | N3 | Empty Method | method body < 3 children | ✅ Check if trivial test is valid |
 | N4 | Ambiguous Type | generics without `extends` | — |
-| N5 | Unnecessary Annotations | match against noise_modifier list | — |
+| N5 | Unnecessary Annotations | Aho-Corasick automaton (21,954 patterns) | — |
 | N6 | Non-English Literals | regex for CJK characters | — |
 | N7 | Synchronized Keywords | keyword match | — |
 
 ## Usage
 
 ```bash
-python -m skills.cleantest-syntax-filter.scripts.syntax_filter \
+python skills/cleantest-syntax-filter/scripts/syntax_filter.py \
   --input_csv <path> \
   --output_csv <path> \
   [--llm_enhance]
 ```
+
+## Example
+
+**Input** (focal method):
+```java
+@GetMapping("/api/users")
+public List<User> getUsers() { return repo.findAll(); }
+```
+**Output**: `NOISE (unnecessary_annotations)` — matched via Aho-Corasick.
 
 ## LLM Enhancement Protocol
 

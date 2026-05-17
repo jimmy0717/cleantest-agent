@@ -1,0 +1,65 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CleanTest-Agent Pipeline Configuration",
+  "type": "object",
+  "required": ["input_csv"],
+  "properties": {
+    "input_csv": {
+      "type": "string",
+      "description": "Path to input CSV with 'src_fm' and 'target' columns"
+    },
+    "output_dir": {
+      "type": "string",
+      "default": "./output",
+      "description": "Directory for output files"
+    },
+    "filters": {
+      "type": "object",
+      "properties": {
+        "syntax": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "llm_enhance": { "type": "boolean", "default": false }
+          }
+        },
+        "relevance": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "llm_enhance": { "type": "boolean", "default": false }
+          }
+        },
+        "coverage": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "threshold": { "type": "number", "default": 0.3, "minimum": 0, "maximum": 1 },
+            "model_path": { "type": "string" }
+          }
+        }
+      }
+    }
+  },
+  "output_schema": {
+    "type": "object",
+    "properties": {
+      "filtered_csv": { "type": "string", "description": "Path to cleaned CSV" },
+      "noise_report": {
+        "type": "object",
+        "properties": {
+          "total_samples": { "type": "integer" },
+          "removed_samples": { "type": "integer" },
+          "kept_samples": { "type": "integer" },
+          "removal_rate": { "type": "string" },
+          "breakdown": {
+            "type": "object",
+            "additionalProperties": { "type": "integer" }
+          },
+          "llm_calls": { "type": "integer" },
+          "llm_overrides": { "type": "integer" }
+        }
+      }
+    }
+  }
+}

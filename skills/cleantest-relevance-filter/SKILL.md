@@ -52,11 +52,24 @@ Answer ONLY with:
 ## Usage
 
 ```bash
-python -m skills.cleantest-relevance-filter.scripts.relevance_filter \
+# Batch mode
+python skills/cleantest-relevance-filter/scripts/relevance_filter.py \
   --input_csv <path> \
   --output_csv <path> \
   [--llm_enhance]
+
+# Single sample (LLM judgment)
+python skills/cleantest-relevance-filter/scripts/llm_relevance.py \
+  --src_fm "public void save(String d) { db.insert(d); }" \
+  --target "@Test public void testLen() { assertEquals(5, \"hello\".length()); }"
 ```
+
+## Example
+
+**Input**: focal = `save(String)`, test = `testLen()` (calls `length()`, not `save`)
+**Stage A**: methods={("save",1)}, invocations={("assertEquals",2),("length",0)} → overlap=0
+**Stage B (LLM)**: "IRRELEVANT: test checks String.length(), unrelated to save()"
+**Output**: `NOISE (no_relevance)`
 
 ## Scripts
 

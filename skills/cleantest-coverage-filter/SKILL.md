@@ -28,7 +28,7 @@ coverage of a test case, filtering out low-coverage samples.
 
 ### Predict Mode (Default)
 ```bash
-python -m skills.cleantest-coverage-filter.scripts.coverage_predictor \
+python skills/cleantest-coverage-filter/scripts/coverage_predictor.py \
   --input_csv <path> \
   --output_csv <path> \
   --model_path <path_to_trained_model> \
@@ -37,7 +37,7 @@ python -m skills.cleantest-coverage-filter.scripts.coverage_predictor \
 
 ### Train Mode (Optional)
 ```bash
-python -m skills.cleantest-coverage-filter.scripts.train_model \
+python skills/cleantest-coverage-filter/scripts/train_model.py \
   --train_csv <path_with_coverage_labels> \
   --output_model <path> \
   --epochs 3 \

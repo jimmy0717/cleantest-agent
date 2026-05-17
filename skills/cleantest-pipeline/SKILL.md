@@ -64,7 +64,16 @@ python -m src.pipeline \
 
 ## Checkpoints
 
-After each filter stage, report to the user:
+After each filter stage, the pipeline logs:
 - Number of samples removed
 - Noise type breakdown
-- Ask for confirmation before proceeding to next stage (unless --auto mode)
+- Number of remaining samples
+
+In CLI mode, the pipeline runs all stages automatically. When invoked through a coding assistant, intermediate results are reported to the user between stages.
+
+## Error Handling
+
+- **Malformed samples**: Wrapped in try/except, skipped silently without crashing.
+- **Deep AST nesting**: Iterative stack-based traversal (no recursion).
+- **Missing GPU/model**: Coverage filter gracefully skipped with `--skip_coverage`.
+- **Missing API key**: LLM enhancement skipped, falls back to rules only.
