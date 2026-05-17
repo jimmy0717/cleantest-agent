@@ -63,9 +63,9 @@ We evaluate CleanTest-Agent on the full Methods2Test dataset (593,953 samples) a
 \label{sec:introduction}
 % ============================================================================
 
-The advent of large language models (LLMs) has revolutionized automated unit test generation, with models such as CodeBERT~\cite{feng2020codebert}, CodeT5~\cite{wang2021codet5}, StarCoder~\cite{li2023starcoder}, and CodeLlama~\cite{roziere2023code} demonstrating remarkable capabilities in generating test cases from focal methods. These models are typically fine-tuned on large-scale datasets like Methods2Test~\cite{tufano2022methods2test} and ATLAS~\cite{watson2020atlas}, which contain hundreds of thousands of focal method--test case pairs extracted from open-source Java projects.
+The advent of large language models (LLMs) has significantly advanced automated unit test generation, with models such as CodeBERT~\cite{feng2020codebert}, CodeT5~\cite{wang2021codet5}, StarCoder~\cite{li2023starcoder}, and CodeLlama~\cite{roziere2023code} showing strong capabilities in generating test cases from focal methods. These models are typically fine-tuned on large-scale datasets like Methods2Test~\cite{tufano2022methods2test} and ATLAS~\cite{watson2020atlas}, which contain hundreds of thousands of focal method--test case pairs extracted from open-source Java projects.
 
-However, the quality of these training datasets has been largely overlooked. Zhang et al.~\cite{zhang2025cleantest} recently conducted a comprehensive study revealing that \textbf{43.52\% of the Methods2Test dataset contains noisy samples} --- a finding that earned the FSE 2025 Distinguished Paper Award. These noise types include syntax errors, empty exception handlers, empty method bodies, ambiguous generic types, unnecessary Java annotations, non-English literals, and test cases that are semantically irrelevant to their paired focal methods. Training on such noisy data degrades model performance across all evaluation metrics.
+However, the quality of these training datasets has been largely overlooked. Zhang et al.~\cite{zhang2025cleantest} recently conducted a detailed study revealing that \textbf{43.52\% of the Methods2Test dataset contains noisy samples} --- a finding that earned the FSE 2025 Distinguished Paper Award. These noise types include syntax errors, empty exception handlers, empty method bodies, ambiguous generic types, unnecessary Java annotations, non-English literals, and test cases that are semantically irrelevant to their paired focal methods. Training on such noisy data degrades model performance across all evaluation metrics.
 
 The CleanTest framework proposed by Zhang et al. provides an effective three-filter pipeline: a rule-based syntax filter, a relevance filter, and a GPT-2-based coverage prediction filter. However, the original implementation exists as standalone Python scripts that are tightly coupled to specific file paths and data formats. This monolithic design presents several challenges:
 
@@ -85,10 +85,10 @@ In this paper, we present \textbf{CleanTest-Agent}, a system that addresses thes
 
     \item \textbf{Aho-Corasick optimization}: We replace the na\"ive linear annotation matching with an Aho-Corasick automaton, achieving an \textbf{11.5$\times$ speedup} (30 minutes $\to$ 2.6 minutes on 593,953 samples).
 
-    \item \textbf{Comprehensive evaluation}: We compare four approaches (rule-based, zero-shot LLM, few-shot LLM, hybrid) and demonstrate that our hybrid approach achieves the best F1 (0.9651) at the lowest cost (\$0.01/500 samples).
+    \item \textbf{Empirical evaluation}: We compare four approaches (rule-based, zero-shot LLM, few-shot LLM, hybrid) and demonstrate that our hybrid approach achieves the best F1 (0.9651) at the lowest cost (\$0.01/500 samples).
 \end{enumerate}
 
-The remainder of this paper is organized as follows. Section~\ref{sec:background} reviews related work on unit test generation, data quality, LLM-based code analysis, and agent skill architectures. Section~\ref{sec:requirements} presents a comprehensive requirements analysis including stakeholder analysis, use cases, functional and non-functional requirements, and a traceability matrix. Section~\ref{sec:model-driven} defines the model-driven approach and contrasts it with the pure-LLM approach. Section~\ref{sec:design} details the system design including architecture, filter specifications, and the pipeline algorithm. Section~\ref{sec:implementation} covers the implementation with technology choices, design decisions, and testing strategy. Section~\ref{sec:evaluation} presents the experimental evaluation through four research questions, including a case study on real samples and an ablation study. Section~\ref{sec:discussion} discusses findings, lessons learned, connections to course topics, and threats to validity. Section~\ref{sec:conclusion} concludes the paper and outlines future work directions. Appendices provide LLM prompt templates, CI/CD configuration, the full noise report, noise type examples with real Java code, a complete API reference, and skill directory structure documentation.
+The remainder of this paper is organized as follows. Section~\ref{sec:background} reviews related work on unit test generation, data quality, LLM-based code analysis, and agent skill architectures. Section~\ref{sec:requirements} presents a requirements analysis including stakeholder analysis, use cases, functional and non-functional requirements, and a traceability matrix. Section~\ref{sec:model-driven} defines the model-driven approach and contrasts it with the pure-LLM approach. Section~\ref{sec:design} details the system design including architecture, filter specifications, and the pipeline algorithm. Section~\ref{sec:implementation} covers the implementation with technology choices, design decisions, and testing strategy. Section~\ref{sec:evaluation} presents the experimental evaluation through four research questions, including a case study on real samples and an ablation study. Section~\ref{sec:discussion} discusses findings, lessons learned, connections to course topics, and threats to validity. Section~\ref{sec:conclusion} concludes the paper and outlines future work directions. Appendices provide LLM prompt templates, CI/CD configuration, the full noise report, noise type examples with real Java code, a complete API reference, and skill directory structure documentation.
 
 \subsection{Scope and Context}
 
@@ -101,7 +101,7 @@ This work was conducted as the final project for the \textit{Software Requiremen
     \item If using a Code Assistant, submission of plugin or skills-level usage documentation.
 \end{itemize}
 
-CleanTest-Agent fulfills all of these requirements: it applies software requirements analysis and system design principles to a real-world problem, implements a model-driven approach with Agent Skills, provides comprehensive experimental evaluation, and includes 38 test cases with GitHub Actions CI/CD.
+CleanTest-Agent fulfills all of these requirements: it applies software requirements analysis and system design principles to a real-world problem, implements a model-driven approach with Agent Skills, provides experimental evaluation, and includes 38 test cases with GitHub Actions CI/CD.
 
 
 % ============================================================================
@@ -139,7 +139,7 @@ The latest generation uses instruction-tuned LLMs such as GPT-4, StarCoder~\cite
 
 Tools like \textbf{Pynguin}~\cite{lukasczyk2022pynguin} for Python combine traditional search-based strategies with LLM-guided generation. \textbf{CodaMosa} combines MOSA (a multi-objective search algorithm) with LLM suggestions for hard-to-cover branches.
 
-The common thread across all four generations is that \textbf{the quality of training data fundamentally constrains model performance}. If 43.52\% of the training data is noisy, even the most sophisticated model architecture cannot fully compensate.
+The common thread across all four generations is that \textbf{the quality of training data directly affects model performance}. If 43.52\% of the training data is noisy, even the most sophisticated model architecture cannot fully compensate.
 
 \subsection{Data Quality in Software Engineering}
 
@@ -147,7 +147,7 @@ Data quality has emerged as a critical concern across all applications of machin
 
 \subsubsection{Code Duplication and Data Leakage}
 
-Allamanis~\cite{allamanis2019adverse} conducted a seminal study on the adverse effects of code duplication in machine learning models of code. Using the popular \textit{java-small}, \textit{java-med}, and \textit{java-large} benchmarks, Allamanis showed that near-duplicate files between training and test sets inflate evaluation metrics by 10--100\%, depending on the task. This work led to the standard practice of deduplication in dataset construction --- a practice we also apply as the first step in our pipeline.
+Allamanis~\cite{allamanis2019adverse} conducted an influential study on the adverse effects of code duplication in machine learning models of code. Using the popular \textit{java-small}, \textit{java-med}, and \textit{java-large} benchmarks, Allamanis showed that near-duplicate files between training and test sets inflate evaluation metrics by 10--100\%, depending on the task. This work led to the standard practice of deduplication in dataset construction --- a practice we also apply as the first step in our pipeline.
 
 \subsubsection{Code Naturalness and Distribution}
 

@@ -3,7 +3,7 @@
 ## CleanTest-Agent
 ### A Multi-Agent Skill-Orchestrated System for Unit Test Training Data Quality Assurance
 
-**[Your Name]**
+**[TODO: Fill in your name]**
 School of Software, Beihang University
 
 Software Requirements Analysis & System Design — Final Project
@@ -156,7 +156,7 @@ make install
 - CI/CD: GitHub Actions (Python 3.10/3.11/3.12) ✅
 - Linting: flake8 + mypy ✅
 
-**GitHub**: [repository URL]
+**GitHub**: [TODO: Fill in your repo URL after GitHub Lab opens]
 
 ---
 
