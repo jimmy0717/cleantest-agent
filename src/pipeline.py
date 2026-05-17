@@ -30,10 +30,10 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Noise modifier dictionary for Unnecessary Annotations
+# Noise modifier dictionary for Unnecessary Annotations (Aho-Corasick)
 # ---------------------------------------------------------------------------
 
-_NOISE_MODIFIERS = None
+_AC_AUTOMATON = None
 _NOISE_MODIFIER_PATH = (
     Path(__file__).resolve().parent.parent
     / "skills" / "cleantest-syntax-filter" / "references"
@@ -41,34 +41,50 @@ _NOISE_MODIFIER_PATH = (
 )
 
 
-def _load_noise_modifiers() -> list:
-    """Load the noise modifier dictionary (lazy, cached)."""
-    global _NOISE_MODIFIERS
-    if _NOISE_MODIFIERS is not None:
-        return _NOISE_MODIFIERS
+def _load_noise_modifiers():
+    """Build Aho-Corasick automaton from noise modifier dictionary (lazy).
+
+    Uses pyahocorasick for O(n+m+z) multi-pattern matching instead of
+    O(n*k) linear scan, where n=text length, m=total pattern length,
+    z=matches, k=number of patterns (21954).
+    """
+    global _AC_AUTOMATON
+    if _AC_AUTOMATON is not None:
+        return _AC_AUTOMATON
 
     if not _NOISE_MODIFIER_PATH.exists():
         logger.warning(
             f"Noise modifier file not found: {_NOISE_MODIFIER_PATH}. "
             "Unnecessary Annotations filter disabled."
         )
-        _NOISE_MODIFIERS = []
-        return _NOISE_MODIFIERS
+        _AC_AUTOMATON = None
+        return _AC_AUTOMATON
 
+    import ahocorasick
+    automaton = ahocorasick.Automaton()
+    count = 0
     with open(_NOISE_MODIFIER_PATH, "r") as f:
-        _NOISE_MODIFIERS = [line.strip("\n") for line in f if line.strip()]
+        for line in f:
+            pattern = line.strip("\n")
+            if pattern:
+                automaton.add_word(pattern, pattern)
+                count += 1
+    automaton.make_automaton()
+    _AC_AUTOMATON = automaton
     logger.info(
-        f"Loaded {len(_NOISE_MODIFIERS)} noise modifiers from dictionary"
+        f"Built Aho-Corasick automaton with {count} noise modifiers"
     )
-    return _NOISE_MODIFIERS
+    return _AC_AUTOMATON
 
 
 def _has_unnecessary_annotations(source_code: str) -> bool:
-    """Check if source code contains any noise modifier from the dictionary."""
-    modifiers = _load_noise_modifiers()
-    for modifier in modifiers:
-        if modifier in source_code:
-            return True
+    """Check if source code contains any noise modifier (Aho-Corasick O(n))."""
+    automaton = _load_noise_modifiers()
+    if automaton is None:
+        return False
+    # iter() yields the first match; we only need to know if any exists
+    for _ in automaton.iter(source_code):
+        return True
     return False
 
 
