@@ -1,21 +1,43 @@
-"""Standalone relevance filter script."""
+"""Standalone relevance filter script.
+
+Prerequisites:
+    pip install cleantest-agent
+    # or, from a clone of the repository:
+    pip install -e .
+"""
 
 import argparse
 import sys
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
-from src.data_loader import load_csv, save_csv
-from src.pipeline import run_relevance_filter
-from src.report_generator import NoiseReport
+def _check_install():
+    try:
+        from cleantest_agent.data_loader import load_csv, save_csv  # noqa: F401
+        from cleantest_agent.pipeline import run_relevance_filter  # noqa: F401
+        from cleantest_agent.report_generator import NoiseReport  # noqa: F401
+    except ImportError:
+        sys.stderr.write(
+            "ERROR: the `cleantest_agent` package is not installed.\n"
+            "       Install it first via:\n"
+            "         pip install cleantest-agent\n"
+            "       or, from a checkout of the project:\n"
+            "         pip install -e .\n"
+        )
+        sys.exit(2)
 
 
 def main():
+    _check_install()
+    from cleantest_agent.data_loader import load_csv, save_csv
+    from cleantest_agent.pipeline import run_relevance_filter
+    from cleantest_agent.report_generator import NoiseReport
+
     parser = argparse.ArgumentParser(description="Relevance Filter")
     parser.add_argument("--input_csv", required=True)
     parser.add_argument("--output_csv", required=True)
     parser.add_argument("--llm_enhance", action="store_true")
+    parser.add_argument("--reflection", action="store_true",
+                        help="Apply 5-rule reflection step on borderline cases")
     args = parser.parse_args()
 
     df = load_csv(args.input_csv)
@@ -23,7 +45,7 @@ def main():
 
     report = NoiseReport(total_samples=len(df))
     remove_idx = run_relevance_filter(
-        df, report, llm_enhance=args.llm_enhance
+        df, report, llm_enhance=args.llm_enhance, reflection=args.reflection,
     )
     df = df.drop(index=remove_idx)
 

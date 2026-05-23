@@ -15,10 +15,46 @@ htmlcov/
 .env
 .venv/
 venv/
-*.csv
-!tests/fixtures/*.csv
-experiments/results/*.json
-experiments/results/*.csv
 .DS_Store
 *.swp
 *.swo
+
+# CSVs: ignore by default but whitelist sample / fixtures / labelled experiment data
+*.csv
+!tests/fixtures/*.csv
+!data/sample_5000.csv
+!experiments/results/*.csv
+!experiments/results/*/*.sample.csv
+# Full filtered_data.csv is huge (~270 MB); always ignore the un-sampled version
+experiments/results/full_run/filtered_data.csv
+output/latest_run/filtered_data.csv
+
+# JSONs: ignore by default but whitelist core experiment artefacts
+experiments/results/*.json
+!experiments/results/baseline_results.json
+!experiments/results/reflection_results.json
+!experiments/results/*/noise_report.json
+# Whitelist Filter 3 training & evaluation summaries
+!experiments/results/coverage_run/*.json
+!experiments/results/coverage_run/*/*.json
+
+# Other large run artefacts
+output/latest_run/*.csv
+
+# Filter 3 model checkpoints (large binary files; keep training_metrics.json
+# but exclude the actual weights, tokenizer files, optimiser state, etc.)
+experiments/results/coverage_run/qwen_0p5b_a800/*.pdparams
+experiments/results/coverage_run/qwen_0p5b_a800/*.pdopt
+experiments/results/coverage_run/qwen_0p5b_a800/checkpoint-*/
+experiments/results/coverage_run/qwen_smoke_a800/
+
+# Local Qwen2.5-Coder base-model cache pulled from ModelScope (~1 GB)
+.ms_cache/
+**/.ms_cache/
+
+# Jupyter / notebook execution artefacts
+.ipynb_checkpoints/
+**/.ipynb_checkpoints/
+
+# Local Baidu AI Studio working dirs (mirrors of /home/aistudio/work)
+work/

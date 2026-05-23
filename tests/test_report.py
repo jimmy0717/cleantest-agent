@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from src.report_generator import NoiseReport
+from cleantest_agent.report_generator import NoiseReport
 
 
 class TestNoiseReport:

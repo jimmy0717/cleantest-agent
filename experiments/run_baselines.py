@@ -19,19 +19,18 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from src.parser_utils import (
+from cleantest_agent.parser_utils import (
     parse_java,
     detect_grammar_errors,
     detect_empty_exception,
     detect_empty_method,
     detect_ambiguous_type,
     detect_non_english,
-    detect_synchronized,
     extract_src_methods,
     extract_test_invocations,
     compute_relevance,
 )
-from src.pipeline import _has_unnecessary_annotations, _load_noise_modifiers
+from cleantest_agent.pipeline import _has_unnecessary_annotations, _load_noise_modifiers
 
 # ---------------------------------------------------------------------------
 # Ground-truth labeling (our system)
@@ -57,8 +56,6 @@ def label_with_rules(row: dict) -> str:
             return "empty_method"
         if detect_non_english(src_fm) or detect_non_english(target):
             return "non_english"
-        if detect_synchronized(src_fm):
-            return "synchronized"
 
         # Relevance check
         src_methods = extract_src_methods(src_root)
@@ -77,7 +74,7 @@ def label_with_rules(row: dict) -> str:
 
 ZERO_SHOT_PROMPT = """You are a code quality expert. Given the following Java focal method and its unit test, determine if the test is NOISY (should be removed from training data) or CLEAN (valid for training).
 
-Noise types include: syntax errors, empty exception handlers, empty method bodies, ambiguous generic types, unnecessary Java annotations (like @ApiOperation, @RequestMapping, @GetMapping, etc.), non-English comments, synchronized keywords, or test not relevant to the focal method.
+Noise types include: syntax errors, empty exception handling statements, missing implementation (empty methods), ambiguous data types, unnecessary Java annotations (like @ApiOperation, @RequestMapping, @GetMapping, etc.), non-English literals, or test not relevant to the focal method.
 
 Focal method:
 ```java
@@ -133,10 +130,7 @@ def llm_predict(src_fm: str, target: str, prompt_template: str,
         base_url=os.environ.get("OPENAI_BASE_URL"),
     )
 
-    prompt = prompt_template.format(
-        src_fm=src_fm[:1500],  # truncate long code
-        target=target[:1500],
-    )
+    prompt = prompt_template.replace("{src_fm}", src_fm[:1500]).replace("{target}", target[:1500])
 
     resp = client.chat.completions.create(
         model=model,
@@ -236,10 +230,19 @@ def main():
         zs_preds = []
         start = time.time()
         for i, (_, row) in enumerate(df.iterrows()):
-            pred = llm_predict(
-                str(row["src_fm"]), str(row["target"]),
-                ZERO_SHOT_PROMPT, model=args.model,
-            )
+            for attempt in range(3):
+                try:
+                    pred = llm_predict(
+                        str(row["src_fm"]), str(row["target"]),
+                        ZERO_SHOT_PROMPT, model=args.model,
+                    )
+                    break
+                except Exception as e:
+                    if attempt == 2:
+                        print(f"  [WARN] Sample {i} failed after 3 retries: {e}")
+                        pred = "CLEAN"  # default on failure
+                    else:
+                        time.sleep(2)
             zs_preds.append(pred)
             if (i + 1) % 50 == 0:
                 print(f"  Processed {i+1}/{len(df)}")
@@ -252,15 +255,32 @@ def main():
         df["zero_shot_pred"] = zs_preds
         print(f"  Metrics: {zs_metrics}")
 
+        # Save intermediate results after zero-shot
+        results["rule_based"]["metrics"] = {
+            "precision": 1.0, "recall": 1.0, "f1": 1.0, "accuracy": 1.0
+        }
+        with open(output_dir / "baseline_results.json", "w") as f:
+            json.dump(results, f, indent=2)
+        print("  [Saved intermediate results]")
+
         # Step 3: Few-shot LLM
         print("\n=== Running few-shot LLM baseline ===")
         fs_preds = []
         start = time.time()
         for i, (_, row) in enumerate(df.iterrows()):
-            pred = llm_predict(
-                str(row["src_fm"]), str(row["target"]),
-                FEW_SHOT_PROMPT, model=args.model,
-            )
+            for attempt in range(3):
+                try:
+                    pred = llm_predict(
+                        str(row["src_fm"]), str(row["target"]),
+                        FEW_SHOT_PROMPT, model=args.model,
+                    )
+                    break
+                except Exception as e:
+                    if attempt == 2:
+                        print(f"  [WARN] Sample {i} failed after 3 retries: {e}")
+                        pred = "CLEAN"  # default on failure
+                    else:
+                        time.sleep(2)
             fs_preds.append(pred)
             if (i + 1) % 50 == 0:
                 print(f"  Processed {i+1}/{len(df)}")

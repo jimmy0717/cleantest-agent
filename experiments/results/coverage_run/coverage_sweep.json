@@ -1,0 +1,62 @@
+{
+  "input_file": "filter_train.csv",
+  "input_sha256": "8eaed383a582cfe43a545d8f8e95213734bb639b8b4fba3db17a63e9b02cf87f",
+  "total_samples": 469174,
+  "coverage_stats": {
+    "min": 0.011,
+    "max": 1.91,
+    "mean": 0.12710020802516764,
+    "median": 0.108,
+    "std": 0.1006653601432679
+  },
+  "threshold_sweep": [
+    {
+      "threshold": 0.01,
+      "removed": 0,
+      "removed_pct": 0.0,
+      "kept": 469174,
+      "elapsed_seconds": 6.546,
+      "samples_per_second": 71672.0
+    },
+    {
+      "threshold": 0.05,
+      "removed": 84021,
+      "removed_pct": 17.9083,
+      "kept": 385153,
+      "elapsed_seconds": 6.433,
+      "samples_per_second": 72932.0
+    },
+    {
+      "threshold": 0.1,
+      "removed": 212059,
+      "removed_pct": 45.1984,
+      "kept": 257115,
+      "elapsed_seconds": 6.423,
+      "samples_per_second": 73042.0
+    },
+    {
+      "threshold": 0.15,
+      "removed": 327016,
+      "removed_pct": 69.7004,
+      "kept": 142158,
+      "elapsed_seconds": 6.407,
+      "samples_per_second": 73224.0
+    },
+    {
+      "threshold": 0.2,
+      "removed": 400999,
+      "removed_pct": 85.4691,
+      "kept": 68175,
+      "elapsed_seconds": 6.435,
+      "samples_per_second": 72914.0
+    },
+    {
+      "threshold": 0.3,
+      "removed": 448842,
+      "removed_pct": 95.6664,
+      "kept": 20332,
+      "elapsed_seconds": 6.489,
+      "samples_per_second": 72306.0
+    }
+  ]
+}

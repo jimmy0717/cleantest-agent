@@ -1,0 +1,40 @@
+{
+  "sample_size": 500,
+  "noise_ratio": 0.462,
+  "rule_based": {
+    "time_seconds": 0.11,
+    "ms_per_sample": 0.2,
+    "noise_count": 231,
+    "clean_count": 269,
+    "metrics": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "accuracy": 1.0
+    }
+  },
+  "zero_shot": {
+    "precision": 0.505,
+    "recall": 0.2208,
+    "f1": 0.3072,
+    "accuracy": 0.54,
+    "tp": 51,
+    "fp": 50,
+    "fn": 180,
+    "tn": 219,
+    "time_seconds": 1487.37,
+    "ms_per_sample": 2974.7
+  },
+  "few_shot": {
+    "precision": 0.5344,
+    "recall": 0.303,
+    "f1": 0.3867,
+    "accuracy": 0.556,
+    "tp": 70,
+    "fp": 61,
+    "fn": 161,
+    "tn": 208,
+    "time_seconds": 1641.62,
+    "ms_per_sample": 3283.2
+  }
+}

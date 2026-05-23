@@ -1,0 +1,25 @@
+=== Filter 3 Coverage Run ===
+Date: 2026-05-18
+Hardware: Apple M3, 16 GB RAM, macOS arm64
+Python: 3.9.6, pandas 2.3.3
+
+Input file: dataset/training_dataset/filter_dataset/filter_train.csv
+Input SHA-256: 8eaed383a582cfe43a545d8f8e95213734bb639b8b4fba3db17a63e9b02cf87f
+Total samples: 469,174
+
+Coverage statistics:
+  min:    0.0110
+  max:    1.9100
+  mean:   0.1271
+  median: 0.1080
+  std:    0.1007
+
+Threshold sensitivity sweep:
+   threshold     removed   removed_pct        kept   elapsed_s     samples/s
+  ------------------------------------------------------------------------
+       0.010           0         0.00%     469,174        6.55        71,672
+       0.050      84,021        17.91%     385,153        6.43        72,932
+       0.100     212,059        45.20%     257,115        6.42        73,042
+       0.150     327,016        69.70%     142,158        6.41        73,224
+       0.200     400,999        85.47%      68,175        6.43        72,914
+       0.300     448,842        95.67%      20,332        6.49        72,306

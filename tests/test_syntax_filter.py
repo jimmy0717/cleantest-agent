@@ -1,14 +1,13 @@
 """Unit tests for syntax noise detection functions."""
 
 import pytest
-from src.parser_utils import (
+from cleantest_agent.parser_utils import (
     parse_java,
     detect_grammar_errors,
     detect_empty_exception,
     detect_empty_method,
     detect_ambiguous_type,
     detect_non_english,
-    detect_synchronized,
 )
 
 
@@ -97,19 +96,11 @@ class TestNonEnglish:
         assert detect_non_english("public int add(int a, int b)") is False
 
 
-class TestSynchronized:
-    def test_has_synchronized(self):
-        assert detect_synchronized("public synchronized void update()") is True
-
-    def test_no_synchronized(self):
-        assert detect_synchronized("public void update()") is False
-
-
 class TestUnnecessaryAnnotations:
     """Test the pipeline-level annotation detection."""
 
     def test_has_noise_annotation(self):
-        from src.pipeline import _has_unnecessary_annotations
+        from cleantest_agent.pipeline import _has_unnecessary_annotations
         # @GetMapping is a common noise annotation in the dictionary
         code = '@GetMapping("/api/test") public void handle() { }'
         result = _has_unnecessary_annotations(code)
@@ -117,6 +108,6 @@ class TestUnnecessaryAnnotations:
         assert isinstance(result, bool)
 
     def test_clean_code_no_annotation(self):
-        from src.pipeline import _has_unnecessary_annotations
+        from cleantest_agent.pipeline import _has_unnecessary_annotations
         code = "public int add(int a, int b) { return a + b; }"
         assert _has_unnecessary_annotations(code) is False

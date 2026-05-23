@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from src.pipeline import run_pipeline
+from cleantest_agent.pipeline import run_pipeline
 
 
 class TestPipeline:

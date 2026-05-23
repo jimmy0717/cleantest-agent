@@ -1,6 +1,6 @@
 # Noise Rules Reference
 
-This document defines the 8 noise types detected by the syntax filter (7 AST/regex-based + 1 dictionary-based via Aho-Corasick).
+This document defines the noise types detected by the syntax filter: 6 types from the original CleanTest paper (N1–N6).
 
 ## N1: Syntax Errors
 
@@ -18,17 +18,17 @@ public int getCount(List<Item> items) {
 
 **LLM Enhancement**: When flagged, LLM confirms whether the code is truly broken or just uses unusual syntax that confuses the parser.
 
-## N2: Empty Exception Handler
+## N2: Empty Exception Handling Statement
 
 **Detection**: `catch_clause` or `finally_clause` with a `block` child that has < 3 AST children (i.e., only `{` and `}`).
 
 **Example**:
 ```java
 try { doWork(); }
-catch (IOException e) { }  // empty catch
+catch (IOException e) { }  // empty catch — exception caught but not handled
 ```
 
-## N3: Empty Method
+## N3: Missing Implementation (Empty Function)
 
 **Detection**: `method_declaration` with a `block` child that has < 3 AST children.
 
@@ -37,18 +37,20 @@ catch (IOException e) { }  // empty catch
 public void initialize() { }
 ```
 
+This noise type occurs when a method lacks implementation details, often because the function is defined elsewhere in the project, resulting in incomplete information in the dataset.
+
 **LLM Enhancement**: Some minimal methods (e.g., `return;` or `return null;`) may be intentional. LLM is asked to confirm.
 
-## N4: Ambiguous Generic Type
+## N4: Ambiguous Data Type
 
-**Detection**: `method_declaration` contains `type_parameters` with `<` and `>` but without `extends`.
+**Detection**: `method_declaration` contains `type_parameters` with generic markers like `<E>`, `<T>`, `<K>`, `<V>`, `<N>`, `<?>`.
 
 **Example**:
 ```java
 public <T> T deserialize(String json) { ... }
 ```
 
-The type `T` is completely unconstrained, making the method's behavior ambiguous.
+Unclear parameters and return values (e.g., type `Object` or unbounded generics) make it challenging for test generation models to understand the method's purpose and behavior.
 
 ## N5: Unnecessary Annotations
 
@@ -66,29 +68,17 @@ The type `T` is completely unconstrained, making the method's behavior ambiguous
 9. `@PathParam(...)`
 10. `@Description(...)`
 
-These annotations describe API/deployment metadata irrelevant to the focal method's test-generation behavior.
+These annotations describe API/deployment metadata irrelevant to the focal method's test-generation behavior. The original paper removes all annotations uniformly to avoid the complexity of evaluating each annotation individually.
 
 ## N6: Non-English Literals
 
-**Detection**: Regex matching CJK Unicode ranges:
-- Chinese: `\u4e00-\u9fa5`
-- Korean: `\uac00-\ud7ff`
-- Japanese Katakana: `\u30a0-\u30ff`
-- Japanese Hiragana: `\u3040-\u309f`
+**Detection**: Regex matching CJK Unicode ranges (from the original paper):
+- `[\uac00-\ud7ff]+` (Korean)
+- `[\u4e00-\u9fa5]+` (Chinese)
+- `[\u30a0-\u30ff\u3040-\u309f]+` (Japanese)
 
 **Example**:
 ```java
 // 计算个人所得税
 public double calculateTax(double income) { ... }
 ```
-
-## N7: Synchronized Keywords
-
-**Detection**: Substring match for `"synchronized"` in focal method source code.
-
-**Example**:
-```java
-public synchronized void incrementCounter() { this.counter++; }
-```
-
-The concurrency keyword adds noise orthogonal to the method's core behavior.

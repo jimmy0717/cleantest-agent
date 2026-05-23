@@ -1,17 +1,18 @@
-"""Simulate LLM baseline results based on literature-reported performance.
+"""[Legacy] Simulate LLM baseline results when no API key is available.
 
-When OPENAI_API_KEY is not available, this script generates realistic
-simulated results based on:
-- Zhao et al. (2026): LLM citation hallucination and noise detection study
-- PaperOrchestra (2026): Multi-agent vs single-agent comparison
-- Our system's actual rule-based labels as ground truth
+This script is kept for historical reference only. The authoritative
+experimental numbers reported in the paper come from `run_baselines.py`
+with real DeepSeek-V4-Flash API calls; their results are stored in:
 
-The simulation adds realistic noise to perfect detection, modeling:
-- LLM's tendency to miss annotation noise (low recall for subtle patterns)
-- LLM's tendency to over-flag complex but valid code (lower precision)
-- Few-shot improvement from examples
+  - experiments/results/baseline_results.json
+  - experiments/results/labeled_samples.csv
+  - experiments/results/experiment_summary.md
 
-Run `run_baselines.py` with a real API key for actual LLM results.
+The simulation here uses literature-reported recall/precision priors
+to fabricate realistic-looking numbers and should NOT be cited or
+compared against the real-experiment results above. To make this
+distinction explicit, the simulator writes its output to
+`simulated_results.json` (not the real-experiment filename).
 """
 
 import json
@@ -158,8 +159,9 @@ def main():
         },
     }
 
-    # Save
-    results_path = output_dir / "experiment_results.json"
+    # Save (use a clearly-named file so simulated numbers are never
+    # mistaken for the real-experiment results in baseline_results.json)
+    results_path = output_dir / "simulated_results.json"
     with open(results_path, "w") as f:
         json.dump(results, f, indent=2)
 

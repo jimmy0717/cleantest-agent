@@ -1,0 +1,327 @@
+{
+  "total_zero_overlap": 45,
+  "errors": 0,
+  "total_changes": 7,
+  "change_rate": 15.6,
+  "rescued_irrelevant_to_relevant": 5,
+  "reversed_relevant_to_irrelevant": 2,
+  "no_reflection_relevant_count": 32,
+  "with_reflection_relevant_count": 35,
+  "details": [
+    {
+      "sample_idx": 16,
+      "rule_label": "NOISE",
+      "no_reflection": "RELEVANT",
+      "with_reflection": "RELEVANT",
+      "changed": false
+    },
+    {
+      "sample_idx": 34,
+      "rule_label": "NOISE",
+      "no_reflection": "RELEVANT",
+      "with_reflection": "RELEVANT",
+      "changed": false
+    },
+    {
+      "sample_idx": 51,
+      "rule_label": "NOISE",
+      "no_reflection": "RELEVANT",
+      "with_reflection": "RELEVANT",
+      "changed": false
+    },
+    {
+      "sample_idx": 55,
+      "rule_label": "NOISE",
+      "no_reflection": "RELEVANT",
+      "with_reflection": "RELEVANT",
+      "changed": false
+    },
+    {
+      "sample_idx": 83,
+      "rule_label": "NOISE",
+      "no_reflection": "IRRELEVANT",
+      "with_reflection": "RELEVANT",
+      "changed": true
+    },
+    {
+      "sample_idx": 86,
+      "rule_label": "NOISE",
+      "no_reflection": "RELEVANT",
+      "with_reflection": "RELEVANT",
+      "changed": false
+    },
+    {
+      "sample_idx": 87,
+      "rule_label": "NOISE",
+      "no_reflection": "IRRELEVANT",
+      "with_reflection": "IRRELEVANT",
+      "changed": false
+    },
+    {
+      "sample_idx": 94,
+      "rule_label": "NOISE",
+      "no_reflection": "RELEVANT",
+      "with_reflection": "RELEVANT",
+      "changed": false
+    },
+    {
+      "sample_idx": 107,
+      "rule_label": "NOISE",
+      "no_reflection": "RELEVANT",
+      "with_reflection": "RELEVANT",
+      "changed": false
+    },
+    {
+      "sample_idx": 136,
+      "rule_label": "NOISE",
+      "no_reflection": "IRRELEVANT",
+      "with_reflection": "IRRELEVANT",
+      "changed": false
+    },
+    {
+      "sample_idx": 145,
+      "rule_label": "NOISE",
+      "no_reflection": "RELEVANT",
+      "with_reflection": "RELEVANT",
+      "changed": false
+    },
+    {
+      "sample_idx": 148,
+      "rule_label": "NOISE",
+      "no_reflection": "RELEVANT",
+      "with_reflection": "RELEVANT",
+      "changed": false
+    },
+    {
+      "sample_idx": 158,
+      "rule_label": "NOISE",
+      "no_reflection": "RELEVANT",
+      "with_reflection": "RELEVANT",
+      "changed": false
+    },
+    {
+      "sample_idx": 181,
+      "rule_label": "NOISE",
+      "no_reflection": "IRRELEVANT",
+      "with_reflection": "IRRELEVANT",
+      "changed": false
+    },
+    {
+      "sample_idx": 183,
+      "rule_label": "NOISE",
+      "no_reflection": "RELEVANT",
+      "with_reflection": "IRRELEVANT",
+      "changed": true
+    },
+    {
+      "sample_idx": 198,
+      "rule_label": "NOISE",
+      "no_reflection": "IRRELEVANT",
+      "with_reflection": "IRRELEVANT",
+      "changed": false
+    },
+    {
+      "sample_idx": 207,
+      "rule_label": "NOISE",
+      "no_reflection": "RELEVANT",
+      "with_reflection": "RELEVANT",
+      "changed": false
+    },
+    {
+      "sample_idx": 224,
+      "rule_label": "NOISE",
+      "no_reflection": "RELEVANT",
+      "with_reflection": "RELEVANT",
+      "changed": false
+    },
+    {
+      "sample_idx": 245,
+      "rule_label": "NOISE",
+      "no_reflection": "RELEVANT",
+      "with_reflection": "RELEVANT",
+      "changed": false
+    },
+    {
+      "sample_idx": 251,
+      "rule_label": "NOISE",
+      "no_reflection": "RELEVANT",
+      "with_reflection": "RELEVANT",
+      "changed": false
+    },
+    {
+      "sample_idx": 253,
+      "rule_label": "NOISE",
+      "no_reflection": "RELEVANT",
+      "with_reflection": "RELEVANT",
+      "changed": false
+    },
+    {
+      "sample_idx": 263,
+      "rule_label": "NOISE",
+      "no_reflection": "IRRELEVANT",
+      "with_reflection": "IRRELEVANT",
+      "changed": false
+    },
+    {
+      "sample_idx": 283,
+      "rule_label": "NOISE",
+      "no_reflection": "IRRELEVANT",
+      "with_reflection": "IRRELEVANT",
+      "changed": false
+    },
+    {
+      "sample_idx": 310,
+      "rule_label": "NOISE",
+      "no_reflection": "IRRELEVANT",
+      "with_reflection": "RELEVANT",
+      "changed": true
+    },
+    {
+      "sample_idx": 323,
+      "rule_label": "NOISE",
+      "no_reflection": "RELEVANT",
+      "with_reflection": "RELEVANT",
+      "changed": false
+    },
+    {
+      "sample_idx": 336,
+      "rule_label": "NOISE",
+      "no_reflection": "IRRELEVANT",
+      "with_reflection": "IRRELEVANT",
+      "changed": false
+    },
+    {
+      "sample_idx": 337,
+      "rule_label": "NOISE",
+      "no_reflection": "RELEVANT",
+      "with_reflection": "RELEVANT",
+      "changed": false
+    },
+    {
+      "sample_idx": 373,
+      "rule_label": "NOISE",
+      "no_reflection": "RELEVANT",
+      "with_reflection": "RELEVANT",
+      "changed": false
+    },
+    {
+      "sample_idx": 374,
+      "rule_label": "NOISE",
+      "no_reflection": "RELEVANT",
+      "with_reflection": "RELEVANT",
+      "changed": false
+    },
+    {
+      "sample_idx": 383,
+      "rule_label": "NOISE",
+      "no_reflection": "RELEVANT",
+      "with_reflection": "RELEVANT",
+      "changed": false
+    },
+    {
+      "sample_idx": 385,
+      "rule_label": "NOISE",
+      "no_reflection": "IRRELEVANT",
+      "with_reflection": "RELEVANT",
+      "changed": true
+    },
+    {
+      "sample_idx": 388,
+      "rule_label": "NOISE",
+      "no_reflection": "RELEVANT",
+      "with_reflection": "RELEVANT",
+      "changed": false
+    },
+    {
+      "sample_idx": 411,
+      "rule_label": "NOISE",
+      "no_reflection": "RELEVANT",
+      "with_reflection": "RELEVANT",
+      "changed": false
+    },
+    {
+      "sample_idx": 418,
+      "rule_label": "NOISE",
+      "no_reflection": "RELEVANT",
+      "with_reflection": "RELEVANT",
+      "changed": false
+    },
+    {
+      "sample_idx": 429,
+      "rule_label": "NOISE",
+      "no_reflection": "RELEVANT",
+      "with_reflection": "RELEVANT",
+      "changed": false
+    },
+    {
+      "sample_idx": 433,
+      "rule_label": "NOISE",
+      "no_reflection": "IRRELEVANT",
+      "with_reflection": "IRRELEVANT",
+      "changed": false
+    },
+    {
+      "sample_idx": 440,
+      "rule_label": "NOISE",
+      "no_reflection": "RELEVANT",
+      "with_reflection": "IRRELEVANT",
+      "changed": true
+    },
+    {
+      "sample_idx": 441,
+      "rule_label": "NOISE",
+      "no_reflection": "RELEVANT",
+      "with_reflection": "RELEVANT",
+      "changed": false
+    },
+    {
+      "sample_idx": 444,
+      "rule_label": "NOISE",
+      "no_reflection": "RELEVANT",
+      "with_reflection": "RELEVANT",
+      "changed": false
+    },
+    {
+      "sample_idx": 456,
+      "rule_label": "NOISE",
+      "no_reflection": "RELEVANT",
+      "with_reflection": "RELEVANT",
+      "changed": false
+    },
+    {
+      "sample_idx": 457,
+      "rule_label": "NOISE",
+      "no_reflection": "IRRELEVANT",
+      "with_reflection": "RELEVANT",
+      "changed": true
+    },
+    {
+      "sample_idx": 460,
+      "rule_label": "NOISE",
+      "no_reflection": "RELEVANT",
+      "with_reflection": "RELEVANT",
+      "changed": false
+    },
+    {
+      "sample_idx": 475,
+      "rule_label": "NOISE",
+      "no_reflection": "RELEVANT",
+      "with_reflection": "RELEVANT",
+      "changed": false
+    },
+    {
+      "sample_idx": 490,
+      "rule_label": "NOISE",
+      "no_reflection": "RELEVANT",
+      "with_reflection": "RELEVANT",
+      "changed": false
+    },
+    {
+      "sample_idx": 493,
+      "rule_label": "NOISE",
+      "no_reflection": "IRRELEVANT",
+      "with_reflection": "RELEVANT",
+      "changed": true
+    }
+  ]
+}

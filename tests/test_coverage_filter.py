@@ -3,8 +3,8 @@
 import pandas as pd
 import pytest
 
-from src.pipeline import run_coverage_filter
-from src.report_generator import NoiseReport
+from cleantest_agent.pipeline import run_coverage_filter
+from cleantest_agent.report_generator import NoiseReport
 
 
 class TestCoverageFilter:

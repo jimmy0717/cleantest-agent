@@ -9,16 +9,34 @@ description: >
 
 # Relevance Filter
 
+## Prerequisites
+
+This skill depends on the open-source [`cleantest-agent`](https://github.com/jimmy0717/cleantest-agent) Python package:
+
+```bash
+pip install cleantest-agent
+# or, from a checkout of the project repository:
+pip install -e .
+```
+
+For Stage B (LLM semantic judgement) you also need an OpenAI-compatible
+endpoint. Set:
+
+```bash
+export OPENAI_API_KEY="sk-..."
+export OPENAI_BASE_URL="https://api.deepseek.com/v1"   # any compatible endpoint works
+```
+
 This skill assesses whether a unit test actually tests its paired focal method.
 
 ## Two-Stage Detection
 
-### Stage A: AST Name Matching (Fast Path)
-1. Parse focal method → extract method name + parameter count
-2. Parse test case → extract all method invocations + argument counts
-3. Compute intersection of (name, param_count) tuples
-4. If intersection > 0 → **RELEVANT** (pass immediately)
-5. If intersection == 0 → proceed to Stage B
+### Stage A: AST Signature Matching (Fast Path)
+1. Parse focal method → extract method name + parameter count + parameter types
+2. Parse test case → extract all method invocations + argument counts + argument types
+3. Check if at least one function call in the test matches the focal method in name, number of parameters, and parameter types
+4. If match found → **RELEVANT** (pass immediately)
+5. If no match → proceed to Stage B
 
 ### Stage B: LLM Semantic Judgment (Borderline Cases Only)
 Only invoked for samples where Stage A found zero name matches (~12.7% of data).

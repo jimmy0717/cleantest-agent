@@ -6,9 +6,9 @@ This document describes how to install and use CleanTest-Agent skills with vario
 
 | Assistant | Status | Installation Method |
 |-----------|--------|-------------------|
-| **CodeBuddy** | ✅ Tested | Copy to `~/.codebuddy/skills/` |
-| **Claude Code** | ✅ Compatible | Copy to `~/.claude/skills/` |
-| **Cursor** | ✅ Compatible | Copy to project `.cursor/skills/` |
+| **CodeBuddy** | Tested | Copy to `~/.codebuddy/skills/` |
+| **Claude Code** | Compatible | Copy to `~/.claude/skills/` |
+| **Cursor** | Compatible | Copy to project `.cursor/skills/` |
 | **Other (SKILL.md compatible)** | Should work | Copy to the assistant's skill directory |
 
 ## Installation
@@ -74,14 +74,14 @@ Simply describe what you want to do in natural language. The assistant will auto
 
 ```bash
 # Full pipeline (no LLM, skip coverage)
-python -m src.pipeline \
+python -m cleantest_agent.pipeline \
   --input_csv path/to/data.csv \
   --output_dir ./output \
   --skip_coverage
 
 # Full pipeline with LLM enhancement
 export OPENAI_API_KEY="sk-..."
-python -m src.pipeline \
+python -m cleantest_agent.pipeline \
   --input_csv path/to/data.csv \
   --output_dir ./output \
   --llm_enhance
@@ -121,7 +121,7 @@ The assistant will read the corresponding `SKILL.md` and follow its instructions
 
 **File:** `skills/cleantest-syntax-filter/SKILL.md`
 
-**Purpose:** Detects 7 types of syntactic noise + unnecessary annotations.
+**Purpose:** Detects 6 syntactic noise types (N1–N6) from the CleanTest paper, including unnecessary annotations matched against a 21,954-pattern dictionary.
 
 **Key Resources:**
 - `references/noise_modifier_fm.txt` — Dictionary of 21,954 annotation patterns
@@ -141,9 +141,9 @@ The assistant will read the corresponding `SKILL.md` and follow its instructions
 
 **File:** `skills/cleantest-coverage-filter/SKILL.md`
 
-**Purpose:** Predicts branch coverage using GPT-2 regression model.
+**Purpose:** Filters samples by branch coverage. Default *label mode* reads the `condition_cover_rate` column from the input CSV; optional *model mode* uses a fine-tuned Qwen2.5-Coder-0.5B regression model when no label is available.
 
-**Requires:** GPU + trained model weights. Skippable via `--skip_coverage`.
+**Requires:** Label mode runs anywhere with pandas. Model mode requires a trained Qwen2.5-Coder-0.5B checkpoint and a GPU; skippable via `--skip_coverage`.
 
 ## Example Session (CodeBuddy)
 
@@ -153,9 +153,11 @@ User: "I have a CSV file at data/all_train.csv with unit test training
 
 Assistant: [Invokes cleantest-pipeline skill]
 "I will run the CleanTest-Agent pipeline on your dataset.
-Running Filter 1 (Syntax Noise)... removed 259,427 samples.
-Running Filter 2 (Relevance)... removed 29,458 samples.
-Pipeline complete! 268,492 clean samples saved to output/filtered_data.csv.
+Loaded 593,953 unique samples (after deduplication on the `target` column).
+Running Filter 1 (Syntax Noise)... removed 290,685 samples.
+Running Filter 2 (Relevance)... removed 29,885 samples.
+Filter 3 (Coverage) was skipped (no model provided).
+Pipeline complete! 273,383 clean samples saved to output/filtered_data.csv.
 See output/summary.md for the full noise report."
 
 User: "What types of noise were found?"
@@ -163,11 +165,10 @@ User: "What types of noise were found?"
 Assistant: [Reads output/noise_report.json]
 "Here is the breakdown:
 - Unnecessary Annotations: 259,427 (43.68%)
-- No Relevance: 29,458 (4.96%)
+- No Relevance: 29,885 (5.03%)
 - Syntax Errors: 16,372 (2.76%)
-- Ambiguous Type: 10,335 (1.74%)
-- Synchronized: 5,318 (0.90%)
+- Ambiguous Data Type: 10,335 (1.74%)
 - Empty Exception: 2,259 (0.38%)
 - Non-English: 1,479 (0.25%)
-- Empty Method: 813 (0.14%)"
+- Missing Implementation: 813 (0.14%)"
 ```
