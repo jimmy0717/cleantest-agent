@@ -451,9 +451,9 @@ Figure~\ref{fig:usecase} presents the UML use case diagram capturing the three p
 \centering
 \begin{tikzpicture}[
     % UML 2.5.1 actor: stick figure drawn from a single TikZ pic command
-    % (Notation: §18.5 Actors). The pic origin (0,0) sits at the figure's
-    % torso so that a node anchor like (rC) corresponds to the actor's
-    % vertical centre line; association lines start from the right edge.
+    % (Notation: §18.5 Actors). The pic is drawn around its origin (0,0):
+    % the head reaches y=+0.48 (top of the circle) and the feet end at
+    % y=-0.80, so the figure is ~1.28 cm tall.
     actor pic/.pic={
         \draw (0,0.30) circle (0.18);                    % head
         \draw (0,0.12) -- (0,-0.40);                     % torso
@@ -461,50 +461,65 @@ Figure~\ref{fig:usecase} presents the UML use case diagram capturing the three p
         \draw (0,-0.40) -- (-0.25,-0.80);                % left leg
         \draw (0,-0.40) -- ( 0.25,-0.80);                % right leg
     },
-    actor/.style={inner sep=0pt, minimum size=1.4cm},
     usecase/.style={ellipse, draw, minimum width=2.8cm, minimum height=0.8cm, align=center, font=\footnotesize},
-    node distance=0.6cm,
 ]
-% Actors (UML 2.5.1 stick figure with the actor name placed directly
-% beneath the figure, §18.5.4). Each actor has a coordinate at its
-% right shoulder (x = 0.3 from the centre) used as the start of every
-% association line so that the line starts at the actor's body edge,
-% never inside it.
-\path (-4.5,0)    pic {actor pic} node[below=0.55cm, font=\footnotesize] {Researcher};
-\path (-4.5,-3)   pic {actor pic} node[below=0.55cm, font=\footnotesize] {Engineer};
-\path (-4.5,-5.5) pic {actor pic} node[below=0.55cm, font=\footnotesize] {Maintainer};
-\coordinate (rC) at (-4.2,0);     % right shoulder of Researcher
-\coordinate (eC) at (-4.2,-3);    % right shoulder of Engineer
-\coordinate (mC) at (-4.2,-5.5);  % right shoulder of Maintainer
+% --- Actor placement ----------------------------------------------------
+% UML 2.5.1 §18.5.4 places the actor name beneath the figure as a
+% separate label. The pic's feet sit at y = origin - 0.80, so the name
+% must clear that by a comfortable gap. We use anchor=north and place
+% the label centre at y = origin - 1.10 (i.e. ~3 mm below the feet),
+% which avoids the legs entirely.
+%
+% To minimise crossing associations the actors are placed at the
+% vertical centroid of the use cases they touch, with at least 1 cm
+% of empty space between successive actor labels and the next stick
+% figure (an actor pic is ~1.3 cm tall and the name label sits ~1.1 cm
+% below the pic origin, so two actors must be separated by >= 2.5 cm
+% on the vertical axis):
+%   Researcher  ↔ {UC1 (y=0.3), UC2 (y=-1.5)}            -> y = -0.6
+%   Engineer    ↔ {UC1 (y=0.3), UC3 (y=-3.3)}            -> y = -3.3
+%   Maintainer  ↔ {UC4 (y=-5.0), UC5 (y=-6.5)}           -> y = -5.75
+\path (-4.8,-0.6)  pic {actor pic};
+\node[font=\footnotesize, anchor=north] at (-4.8,-1.70) {Researcher};
+\path (-4.8,-3.3)  pic {actor pic};
+\node[font=\footnotesize, anchor=north] at (-4.8,-4.40) {Engineer};
+\path (-4.8,-5.75) pic {actor pic};
+\node[font=\footnotesize, anchor=north] at (-4.8,-6.85) {Maintainer};
+% Right-edge anchors used as the starting point of every association
+% line so the line departs from the actor's body, never from inside it.
+\coordinate (rC) at (-4.50,-0.60);
+\coordinate (eC) at (-4.50,-3.30);
+\coordinate (mC) at (-4.50,-5.75);
 
 % System boundary (Subject, §18.4.4): rectangle with the subject name
-% placed inside the upper-left corner, per UML 2.5.1 notation.
-\draw[rounded corners] (-2,-7) rectangle (4.5,1.5);
-\node[font=\small\bfseries, anchor=north west] at (-1.85,1.4) {CleanTest-Agent};
+% placed inside the upper-left corner.
+\draw[rounded corners] (-2,-7.4) rectangle (4.5,1.4);
+\node[font=\small\bfseries, anchor=north west] at (-1.85,1.30) {CleanTest-Agent};
 
-% Use cases
-\node[usecase] (uc1) at (1.25,0.3)  {Batch Dataset\\Cleaning};
-\node[usecase] (uc2) at (1.25,-1.5) {Interactive Noise\\Inspection};
-\node[usecase] (uc3) at (1.25,-3.3) {Configure\\Thresholds};
-\node[usecase] (uc4) at (1.25,-5)   {Extend Pipeline\\(Add Filter)};
-\node[usecase] (uc5) at (1.25,-6.5) {Run Tests\\and CI/CD};
+% --- Use cases ----------------------------------------------------------
+\node[usecase] (uc1) at (1.25, 0.30) {Batch Dataset\\Cleaning};
+\node[usecase] (uc2) at (1.25,-1.50) {Interactive Noise\\Inspection};
+\node[usecase] (uc3) at (1.25,-3.30) {Configure\\Thresholds};
+\node[usecase] (uc4) at (1.25,-5.00) {Extend Pipeline\\(Add Filter)};
+\node[usecase] (uc5) at (1.25,-6.50) {Run Tests\\and CI/CD};
 
-% Associations (UML 2.5.1 §18.5.4: solid line with no arrowhead).
-% Endpoints attach to actor's right shoulder and use case's west pole.
+% --- Associations (UML 2.5.1 §18.5.4: solid line, no arrowhead) ---------
+% Each actor only associates with use cases that lie at, or close to,
+% its own vertical band, so the lines do not cross any other use case.
 \draw (rC) -- (uc1.west);
-\draw (rC) -- (uc3.west);
-\draw (eC) -- (uc2.west);
+\draw (rC) -- (uc2.west);
 \draw (eC) -- (uc1.west);
+\draw (eC) -- (uc3.west);
 \draw (mC) -- (uc4.west);
 \draw (mC) -- (uc5.west);
 
-% Use cases are kept independent. The earlier "<<include>>" arrow from
-% UC1 to UC3 was removed because configuring thresholds is a
-% precondition / setup activity, not a mandatory sub-flow that UC1
-% must always invoke (which is what UML 2.5.1 "<<include>>" requires).
+% Use cases are deliberately kept independent: we do not draw a
+% <<include>> from UC1 to UC3 because configuring thresholds is a
+% setup activity, not a mandatory sub-flow that UC1 must always invoke
+% (the semantic precondition for UML 2.5.1 <<include>>).
 \end{tikzpicture}
 \caption{UML Use Case Diagram}
-\Description{UML 2.5.1 use case diagram. Three stick-figure actors (Researcher, Engineer, Maintainer) on the left are connected by solid association lines to five use cases (Batch Dataset Cleaning, Interactive Noise Inspection, Configure Thresholds, Extend Pipeline, Run Tests and CI/CD) inside the CleanTest-Agent system boundary, whose name appears in the upper-left corner of the boundary rectangle.}
+\Description{UML 2.5.1 use case diagram. Three stick-figure actors (Researcher, Engineer, Maintainer) on the left are connected by solid association lines to five use cases (Batch Dataset Cleaning, Interactive Noise Inspection, Configure Thresholds, Extend Pipeline, Run Tests and CI/CD) inside the CleanTest-Agent system boundary. Each actor name is placed clearly below the corresponding stick figure, and the actors are vertically positioned so that their associations do not cross any unrelated use case. The subject name appears in the upper-left corner of the boundary rectangle.}
 \label{fig:usecase}
 \end{figure}
 
@@ -561,39 +576,47 @@ Figure~\ref{fig:activity} shows the activity flow for the primary use case (UC1)
 \node[decision, below=0.8cm of llm] (dllm) {LLM\\verdict?};
 
 % --- Sequential edges on the main column ---
+% Guard labels follow UML 2.5.1 §15.7.5: square brackets, placed
+% adjacent to the ControlFlow line. We use `midway` and a small
+% `inner sep` so the label centre sits at the midpoint of the
+% segment, well clear of both endpoint nodes.
 \draw[arrow] (s)     -- (load);
 \draw[arrow] (load)  -- (f1);
 \draw[arrow] (f1)    -- (d1);
-\draw[arrow] (d1)    -- node[left, font=\tiny] {[no noise]} (f2);
+\draw[arrow] (d1)    -- node[midway, left, font=\tiny, inner sep=2pt] {[no noise]} (f2);
 \draw[arrow] (f2)    -- (d2);
-\draw[arrow] (d2)    -- node[left, font=\tiny] {[overlap $>$ 0]} (m2);
+\draw[arrow] (d2)    -- node[midway, left, font=\tiny, inner sep=2pt] {[overlap $>$ 0]} (m2);
 \draw[arrow] (m2)    -- (f3);
 \draw[arrow] (f3)    -- (mrg);
 \draw[arrow] (mrg)   -- (report);
 \draw[arrow] (report) -- (e);
 
 % --- Side branch: d2 [overlap = 0] -> LLM -> dllm -> ... ---
-\draw[arrow] (d2.east) -- node[above, font=\tiny] {[overlap = 0]} (llm.west);
+\draw[arrow] (d2.east) -- node[midway, above, font=\tiny, inner sep=2pt] {[overlap = 0]} (llm.west);
 \draw[arrow] (llm)     -- (dllm);
 % [RELEVANT] joins the main column at the m2 merge node.
-\draw[arrow] (dllm.west) -- node[above, font=\tiny] {[RELEVANT]} (m2.east);
+\draw[arrow] (dllm.west) -- node[midway, above, font=\tiny, inner sep=2pt] {[RELEVANT]} (m2.east);
 
 % [IRRELEVANT] bypasses Filter 3 and joins the final merge mrg
-% (sample is removed). Routed through the right column x = 6 so the
-% segment never crosses any node.
-\coordinate (rightCol) at (6, 0);
+% (sample is removed). Routed through the right column x = 6.5 so the
+% segment never crosses any node, and the guard label is anchored on
+% the FIRST horizontal segment at a position that is far enough from
+% the dllm decision node to avoid touching it (UML 2.5.1 §15.7.5
+% only requires the guard to be on/near the edge, not at the source).
+\coordinate (rightCol) at (6.5, 0);
 \draw[arrow] (dllm.east)
-    -- node[above, font=\tiny] {[IRRELEVANT]} (rightCol |- dllm.east)
+    -- node[pos=0.65, above, font=\tiny, inner sep=2pt] {[IRRELEVANT]} (rightCol |- dllm.east)
     -- (rightCol |- mrg.east)
     -- (mrg.east);
 
 % --- Bypass branch: d1 [noise detected] -> mrg (sample removed by F1) ---
-% Routed through the left column x = -3.5 so the segment never crosses
-% any node on the main column.
-\coordinate (leftCol) at (-3.5, 0);
+% Routed through the left column x = -3.8 so the segment never
+% crosses any node on the main column. Label is placed on the long
+% vertical segment, well clear of both diamonds.
+\coordinate (leftCol) at (-3.8, 0);
 \draw[arrow] (d1.west)
-    -- node[above, font=\tiny] {[noise detected]} (leftCol |- d1.west)
-    -- (leftCol |- mrg.west)
+    -- (leftCol |- d1.west)
+    -- node[midway, right, font=\tiny, inner sep=2pt] {[noise detected]} (leftCol |- mrg.west)
     -- (mrg.west);
 \end{tikzpicture}
 \caption{Activity Diagram: Batch Cleaning Pipeline (UC1)}
@@ -1034,22 +1057,23 @@ CleanTest-Agent follows a \textbf{pipeline-of-skills} architecture, where each p
 \begin{figure}[h]
 \centering
 \begin{tikzpicture}[
-    box/.style={rectangle, draw, rounded corners, minimum width=3cm, minimum height=0.9cm, align=center, font=\small},
+    box/.style={rectangle, draw, rounded corners, minimum width=3.6cm, minimum height=0.9cm, align=center, font=\small},
     arrow/.style={->, >=stealth, thick},
 ]
-% Use absolute coordinates to keep filters from overlapping each other
-% and the orchestrator. Horizontal spacing 4cm between filter centers
-% gives 1cm gap given 3cm box width.
+% Use absolute coordinates with 5 cm horizontal spacing between filter
+% centres so the 3.6 cm-wide boxes never touch each other (1.4 cm gap).
+% Filter 3's subtitle is wrapped onto a third line so the entire
+% string "Label scan / Qwen2.5-Coder regression" fits inside the box.
 \node[box, fill=blue!10] (user) at (0,3) {User / Coding Assistant};
 \node[box, fill=orange!15] (orch) at (0,1.5)
     {Orchestrator Skill\\{\footnotesize\texttt{cleantest-pipeline}}};
-\node[box, fill=green!15, minimum height=1.2cm] (f1) at (-4,-0.3)
+\node[box, fill=green!15, minimum height=1.3cm] (f1) at (-5,-0.4)
     {Filter 1: Syntax\\{\footnotesize AST + Aho-Corasick}\\{\footnotesize + LLM Enhance}};
-\node[box, fill=green!15, minimum height=1.2cm] (f2) at (0,-0.3)
+\node[box, fill=green!15, minimum height=1.3cm] (f2) at (0,-0.4)
     {Filter 2: Relevance\\{\footnotesize Name Match}\\{\footnotesize + LLM Fallback}};
-\node[box, fill=green!15, minimum height=1.2cm] (f3) at (4,-0.3)
-    {Filter 3: Coverage\\{\footnotesize Label scan or Qwen2.5-Coder regression}};
-\node[box, fill=yellow!15] (out) at (0,-2.5)
+\node[box, fill=green!15, minimum height=1.3cm] (f3) at (5,-0.4)
+    {Filter 3: Coverage\\{\footnotesize Label scan}\\{\footnotesize / Qwen2.5-Coder regression}};
+\node[box, fill=yellow!15] (out) at (0,-2.7)
     {Clean Dataset + Noise Report};
 
 \draw[arrow] (user) -- (orch);
@@ -1071,65 +1095,113 @@ Figure~\ref{fig:component} shows the system's component-level architecture, illu
 
 \begin{figure}[htbp]
 \centering
+\resizebox{\textwidth}{!}{%
 \begin{tikzpicture}[
     node distance=0.8cm,
-    comp/.style={rectangle, draw, minimum width=2.8cm, minimum height=1.1cm, align=center, font=\footnotesize},
+    % Component nodes use a tight `inner xsep` so that the actual
+    % box width is dominated by the bold component name. The four
+    % Skill components are placed in a single row at x = ±6.75 / ±2.25
+    % (4.5 cm centre-to-centre spacing) so that adjacent boxes have a
+    % clear gap; the diagram's overall horizontal span is then scaled
+    % to \textwidth via \resizebox.
+    comp/.style={rectangle, draw, minimum width=3.8cm, minimum height=1.0cm,
+                 align=center, font=\footnotesize, inner xsep=2pt},
+    lib/.style={rectangle, draw, minimum width=3.0cm, minimum height=1.1cm,
+                align=center, font=\footnotesize, inner xsep=2pt},
     % UML 2.5.1 §7.8.4 Dependency: dashed line with an open V-shaped
     % stick arrowhead (NOT a triangular arrowhead, which denotes
     % generalization or realization).
     dep/.style={-{Stealth[length=2mm,open]}, dashed},
 ]
 % Skills layer (UML 2.5.1 components are stereotyped <<component>>).
-\node[comp, fill=orange!10] (pipe) at (0,4)
-    {{\tiny$\ll$component$\gg$}\\\textbf{cleantest-pipeline}\\(SKILL.md)};
-\node[comp, fill=orange!10] (sf) at (-3.5,2.5)
-    {{\tiny$\ll$component$\gg$}\\\textbf{cleantest-syntax-filter}\\(SKILL.md)};
-\node[comp, fill=orange!10] (rf) at (0,2.5)
-    {{\tiny$\ll$component$\gg$}\\\textbf{cleantest-relevance-filter}\\(SKILL.md)};
-\node[comp, fill=orange!10] (cf) at (3.5,2.5)
-    {{\tiny$\ll$component$\gg$}\\\textbf{cleantest-coverage-filter}\\(SKILL.md)};
+% The orchestrator skill (cleantest-pipeline) is placed on the right
+% and the three filter Skills on the left, matching the read order
+% of the data flow (a sample enters the syntax filter first, then
+% relevance, then coverage, before the pipeline emits its report).
+\node[comp, fill=orange!10] (sf) at (-6.75,3)
+    {{\tiny$\ll$component$\gg$}\\\textbf{cleantest-syntax-filter}};
+\node[comp, fill=orange!10] (rf) at (-2.25,3)
+    {{\tiny$\ll$component$\gg$}\\\textbf{cleantest-relevance-filter}};
+\node[comp, fill=orange!10] (cf) at (2.25,3)
+    {{\tiny$\ll$component$\gg$}\\\textbf{cleantest-coverage-filter}};
+\node[comp, fill=orange!10] (pipe) at (6.75,3)
+    {{\tiny$\ll$component$\gg$}\\\textbf{cleantest-pipeline}};
 
-% Core library
-\node[comp, fill=blue!10] (pipeline) at (-2,0.5)
+% Core library (centred row).  pipeline.py is the central module that
+% orchestrates the four other core modules and is the only target
+% for skill-level dependencies coming from above.
+\node[comp, fill=blue!10] (pipeline) at (0,1)
     {{\tiny$\ll$component$\gg$}\\\textbf{pipeline.py}};
-\node[comp, fill=blue!10] (parser) at (-2,-1.2)
+\node[comp, fill=blue!10] (parser) at (-5.5,1)
     {{\tiny$\ll$component$\gg$}\\\textbf{parser\_utils.py}};
-\node[comp, fill=blue!10] (llm) at (2,0.5)
+\node[comp, fill=blue!10] (llm) at (5.5,1)
     {{\tiny$\ll$component$\gg$}\\\textbf{llm\_client.py}};
-\node[comp, fill=blue!10] (report) at (2,-1.2)
+% report_generator.py and data_loader.py are auxiliary modules used by
+% pipeline.py only.  They are placed close to parser_utils.py and
+% llm_client.py respectively so that the central corridor (around
+% x = 0) and the cf column (around x = 2.25) remain free for the
+% pipeline -> pyahocorasick and cf -> Transformers/PaddleNLP links.
+\node[comp, fill=blue!10, text width=2.9cm] (report) at (-4.5,-0.8)
     {{\tiny$\ll$component$\gg$}\\\textbf{report\_generator.py}};
-\node[comp, fill=blue!10] (loader) at (0,-2.7)
+\node[comp, fill=blue!10, text width=2.9cm] (loader) at (4.5,-0.8)
     {{\tiny$\ll$component$\gg$}\\\textbf{data\_loader.py}};
 
-% External libraries (custom <<library>> stereotype, declared here so the
-% reader knows it is a profile extension and not a built-in UML keyword).
-\node[comp, fill=gray!10] (ts) at (-5,-2.7)
+% External libraries (custom <<library>> stereotype).  Each library
+% sits beneath the core component that uses it so every dependency
+% line in this layer is short and roughly vertical, with no curve
+% threading through other boxes.
+\node[lib, fill=gray!10] (ts) at (-5.5,-2.8)
     {{\tiny$\ll$library$\gg$}\\\textbf{tree-sitter}\\(C library)};
-\node[comp, fill=gray!10] (aho) at (-5,-0.5)
+\node[lib, fill=gray!10] (aho) at (0,-2.8)
     {{\tiny$\ll$library$\gg$}\\\textbf{pyahocorasick}\\(C library)};
-\node[comp, fill=gray!10] (api) at (5,0.5)
+\node[lib, fill=gray!10] (api) at (5.5,-2.8)
     {{\tiny$\ll$library$\gg$}\\\textbf{OpenAI API}\\(DeepSeek)};
-\node[comp, fill=gray!10] (tf) at (5,-1.8)
-    {{\tiny$\ll$library$\gg$}\\\textbf{Transformers /}\\\textbf{PaddleNLP}\\(model mode)};
+% Transformers/PaddleNLP is the only library that is owned by a Skill
+% (the model-mode of cleantest-coverage-filter) rather than a core
+% library module, so it is placed on a fourth row beneath api so the
+% cf -> tf dependency line can travel down the right corridor without
+% touching any other component.
+\node[lib, fill=gray!10] (tf) at (5.5,-4.8)
+    {{\tiny$\ll$library$\gg$}\\\textbf{Transformers /}\\\textbf{PaddleNLP}};
 
-% Dependencies (UML 2.5.1 §7.8.4: dashed line + open V-shaped arrowhead).
-\draw[dep] (pipe) -- (sf);
-\draw[dep] (pipe) -- (rf);
-\draw[dep] (pipe) -- (cf);
-\draw[dep] (sf) -- (pipeline);
-\draw[dep] (rf) -- (pipeline);
-\draw[dep] (cf) -- (pipeline);
-\draw[dep] (pipeline) -- (parser);
-\draw[dep] (pipeline) -- (llm);
-\draw[dep] (pipeline) -- (report);
-\draw[dep] (pipeline) -- (loader);
-\draw[dep] (parser) -- (ts);
-\draw[dep] (pipeline) -- (aho);
-\draw[dep] (llm) -- (api);
-\draw[dep] (cf) -- (tf);
-\end{tikzpicture}
+% --- Dependencies (UML 2.5.1 §7.8.4: dashed line + open V arrowhead) ---
+% (a) The orchestrator Skill `cleantest-pipeline` invokes the three
+% filter Skills in sequence, so cleantest-pipeline depends on each
+% filter (the arrowhead points from client to supplier, §7.8.4.5).
+% The three edges are routed above the skills row via Bezier curves
+% so the arrowheads land on the east edge of each filter box without
+% crossing other skill boxes.
+\draw[dep] (pipe.west) -- (cf.east);
+\draw[dep] (pipe.north west) .. controls (4.0,4.0) and (-0.5,4.0) .. (rf.north east);
+\draw[dep] (pipe.north west) .. controls (1.5,4.6) and (-5.0,4.6) .. (sf.north east);
+% (b) Each Skill ultimately calls into pipeline.py (its imperative core).
+\draw[dep] (sf.south) -- (pipeline.north west);
+\draw[dep] (rf.south) -- (pipeline.north);
+\draw[dep] (cf.south) -- (pipeline.north east);
+% (c) pipeline.py orchestrates the four other core modules.
+\draw[dep] (pipeline.west)  -- (parser.east);
+\draw[dep] (pipeline.east)  -- (llm.west);
+\draw[dep] (pipeline.south west) -- (report.north east);
+\draw[dep] (pipeline.south east) -- (loader.north west);
+% (d) Core modules / coverage Skill -> external libraries.  Each
+% dependency is a straight, mostly-vertical line that passes through
+% the ~1 cm gap between the report/loader row and the library row.
+\draw[dep] (parser.south) -- (ts.north);
+% pyahocorasick: pipeline.py sits at x = 0 and so does aho, so the
+% link is a straight vertical line that passes cleanly through the
+% empty corridor between report_generator.py and data_loader.py.
+\draw[dep] (pipeline.south) -- (aho.north);
+% Transformers/PaddleNLP: cleantest-coverage-filter is at x = 2.25
+% in the skills row; with report and loader pushed out to x = ±4.5,
+% the column x = 2.25 is now free of any other box, so the link
+% goes straight south from cf.south to y = -3.7 (just below the
+% lib row), then east to x = 5.5, then south into tf.north.
+\draw[dep] (cf.south) -- (2.25,-3.7) -- (5.5,-3.7) -- (tf.north);
+\draw[dep] (llm.south) -- (api.north);
+\end{tikzpicture}%
+}
 \caption{Component Diagram: Module Dependencies}
-\Description{UML 2.5.1 component diagram. Skill components (orange, stereotyped <<component>>) depend on core library components (blue, also <<component>>), which in turn depend on external libraries (grey, stereotyped <<library>> as a profile extension). The cleantest-coverage-filter component additionally depends on Transformers / PaddleNLP when invoked in model mode. All dependencies are drawn as dashed lines with open V-shaped arrowheads, per UML 2.5.1 notation.}
+\Description{UML 2.5.1 component diagram. Four Skill components (orange, stereotyped <<component>>) are placed in a single horizontal row (cleantest-syntax-filter, cleantest-relevance-filter, cleantest-coverage-filter, cleantest-pipeline). The orchestrator Skill cleantest-pipeline depends on each of the three filter Skills (it invokes them in sequence); each Skill in turn depends on the core library component pipeline.py, which depends on parser\_utils.py, llm\_client.py, report\_generator.py and data\_loader.py. External libraries (grey, stereotyped <<library>> as a profile extension) are placed in the bottom row: parser\_utils.py depends on tree-sitter; pipeline.py depends on pyahocorasick; llm\_client.py depends on the OpenAI API; cleantest-coverage-filter additionally depends on Transformers / PaddleNLP when invoked in model mode. All dependencies are drawn as dashed lines with open V-shaped arrowheads, per UML 2.5.1 notation.}
 \label{fig:component}
 \end{figure}
 
@@ -1195,17 +1267,19 @@ Figure~\ref{fig:classdiagram} presents the key data types and their relationship
 
 % Pipeline ◆── NoiseReport: composition (Pipeline owns the report
 % instance for the entire run, lifecycle is bound to the Pipeline).
-% UML 2.5.1 §9.5 puts multiplicity and role name on the END close to
-% the property they describe, not at the line midpoint:
-%   - The "1" near pipe.west is the multiplicity at the composite end
-%     (one Pipeline composes exactly one NoiseReport).
-%   - The role name "report" near pipe.west is the property name on
-%     the Pipeline side (the "report" attribute of Pipeline).
-%   - The "1" near report.east is the multiplicity at the part end
-%     (each NoiseReport is owned by exactly one Pipeline).
+% UML 2.5.1 §9.5.4 places multiplicity adjacent to the END of the
+% line at each property the multiplicity describes; role names sit
+% near the END of the line on the side OPPOSITE to the owning
+% Class (i.e. on the part end here, because the Pipeline class
+% owns a property "report : NoiseReport"). The three labels are
+% drawn as separate nodes so they never visually collide:
+%   - "1" near report.east (part end, multiplicity of NoiseReport)
+%   - "report" near report.east (role name on the Pipeline side)
+%   - "1" near pipe.west     (composite end, multiplicity of Pipeline)
 \draw[composition] (report.east)
-    -- node[pos=0.08, above, font=\tiny] {1}
-       node[pos=0.92, above, font=\tiny] {report\quad 1}
+    -- node[pos=0.05, above=1pt, font=\tiny] {1}
+       node[pos=0.05, below=1pt, font=\tiny] {report}
+       node[pos=0.95, above=1pt, font=\tiny] {1}
        (pipe.west);
 
 % Pipeline ⤍ LLMClient: dependency stereotyped <<use>>
@@ -1213,7 +1287,7 @@ Figure~\ref{fig:classdiagram} presents the key data types and their relationship
 \draw[dep] (pipe.south) -- node[right, font=\tiny] {$\ll$use$\gg$} (llmc.north);
 \end{tikzpicture}
 \caption{Class Diagram: Core Data Types}
-\Description{UML 2.5.1 class diagram with three classes (NoiseReport, Pipeline, LLMClient). Each class shows three compartments (name, attributes, operations) with UML 2.5.1 visibility prefixes (+ public, - private). Optional return types are written using UML 2.5.1 multiplicity notation "String [0..1]" rather than Kotlin-style "str?". Pipeline has a composition relationship to NoiseReport (filled diamond at the Pipeline end, multiplicity 1 on both ends, role name "report" on the Pipeline end) and a <<use>> dependency to LLMClient (dashed line with open V-shaped arrowhead).}
+\Description{UML 2.5.1 class diagram with three classes (NoiseReport, Pipeline, LLMClient). Each class shows three compartments (name, attributes, operations) with UML 2.5.1 visibility prefixes (+ public, - private). Optional return types are written using UML 2.5.1 multiplicity notation "String [0..1]" rather than Kotlin-style "str?". Pipeline has a composition relationship to NoiseReport (filled diamond at the Pipeline end, multiplicity "1" labelled at each end of the line, role name "report" placed at the part end on the Pipeline-property side) and a <<use>> dependency to LLMClient (dashed line with open V-shaped arrowhead).}
 \label{fig:classdiagram}
 \end{figure}
 
