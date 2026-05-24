@@ -51,7 +51,7 @@ Answer ONLY with one of:
         max_tokens=60,
         temperature=0.0,
     )
-    answer = resp.choices[0].message.content.strip()
+    answer = (resp.choices[0].message.content or "").strip()
     return "KEEP" if answer.upper().startswith("KEEP") else "NOISE"
 
 
@@ -96,8 +96,10 @@ Answer ONLY with one of:
         max_tokens=60,
         temperature=0.0,
     )
-    initial_answer = resp.choices[0].message.content.strip()
-    initial_verdict = "RELEVANT" if initial_answer.upper().startswith("RELEVANT") else "IRRELEVANT"
+    initial_answer = (resp.choices[0].message.content or "").strip()
+    initial_verdict: Literal["RELEVANT", "IRRELEVANT"] = (
+        "RELEVANT" if initial_answer.upper().startswith("RELEVANT") else "IRRELEVANT"
+    )
 
     # Reflection: only when initial judgment is IRRELEVANT (reduce false removals)
     if reflection and initial_verdict == "IRRELEVANT":
@@ -142,7 +144,7 @@ Answer ONLY with one of:
             max_tokens=80,
             temperature=0.0,
         )
-        final_answer = resp2.choices[0].message.content.strip()
+        final_answer = (resp2.choices[0].message.content or "").strip()
         return "RELEVANT" if final_answer.upper().startswith("RELEVANT") else "IRRELEVANT"
 
     return initial_verdict
