@@ -99,6 +99,7 @@ vs. pure LLM: rules handle 87.3% (free, instant); LLM handles only the
 - Strategy (filter selection)
 - Pipeline (sequential stages)
 - Facade (LLM-client abstraction)
+- Observer (NoiseReport accumulator)
 - Reflection (self-correction for borderline cases)
 
 ---
@@ -194,6 +195,10 @@ System design:
 Testing & CI/CD:
 - 36 pytest test cases (Python 3.10 / 3.11 / 3.12 matrix on GitHub Actions).
 - 100% of tests passing.
+- Tag-driven CD pipeline (`publish.yml`): build -> twine check ->
+  PyPI publish via OIDC Trusted Publisher (no API token) ->
+  sigstore keyless signing -> attach signed wheel + sdist to the
+  GitHub Release. Result: `pip install cleantest-agent` on PyPI.
 
 Course-lab method integration:
 - Lab 1 Reflection pattern → Filter 2 self-correction step.
@@ -229,9 +234,15 @@ Course-lab method integration:
 > Systematic software design beats "just ask the LLM" -- supported by
 > real-API experiments and a reproducible CI/CD pipeline.
 
+Released as v0.1.1 on PyPI:
+`pip install cleantest-agent`
+(GitHub Actions matrix green; sigstore-signed wheel attached to the
+v0.1.1 GitHub Release.)
+
 ---
 
 Thank you. Questions?
 
-GitHub: <https://github.com/jimmy0717/cleantest-agent>
+GitHub : <https://github.com/jimmy0717/cleantest-agent>
+PyPI   : <https://pypi.org/project/cleantest-agent/>
 Contact: yang_qhd@buaa.edu.cn

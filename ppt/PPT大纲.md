@@ -13,7 +13,8 @@
 - [实现技术细节] P4, P5
 - [实验评估：智能模型驱动 vs 纯大模型] P6, P7, P8
 - [亮点：新方法或对已有方法的改进] P4 (Reflection 5 条规则)、P5 (Aho-Corasick 加速)、P10 (Filter 3 微调 Qwen2.5-Coder-0.5B)
-- [软件工程实践] P9
+- [软件工程实践 + CI/CD] P9（含 GitHub Actions 测试矩阵 + PyPI 自动发布 + sigstore 签名）
+- [开源可达] P10（`pip install cleantest-agent`，v0.1.1 已上 PyPI）
 
 ---
 
@@ -123,7 +124,8 @@ User / Coding Assistant (natural language)
   其中 5 条从误删中被救回（11.1% 救回率），
   人工核对 6/7 翻转正确（85.7% 正确率）。
 
-设计模式：Strategy / Pipeline / Facade / Reflection（5 个滤波器选择 / 串联 / LLM-客户端封装 / 自纠错）。
+设计模式：Strategy / Pipeline / Facade / Observer / Reflection
+（共 5 个：滤波器选择 / 串联 / LLM 客户端封装 / `NoiseReport` 累积观察 / 自纠错；与 P9 一致）。
 
 讲解要点：
 - 核心创新：不用一个 LLM 解决所有问题。
@@ -252,6 +254,10 @@ public ResponseEntity<?> createAccount(
 - 36 个 pytest 测试用例，100% 通过；
 - pytest + flake8 + mypy；
 - GitHub Actions 在 Python 3.10 / 3.11 / 3.12 上跑测试矩阵。
+- Tag 驱动的 CD 流水线 (`publish.yml`)：build → twine check →
+  PyPI 上传（OIDC Trusted Publisher，无 API token）→ sigstore
+  无密钥签名 → 把签名后的 wheel + sdist 自动附到 GitHub Release。
+  对外可达成 `pip install cleantest-agent`（PyPI 上 v0.1.1 已发布）。
 
 课程实验法对应（亮点）：
 - Lab 1 Reflection 模式 → Filter 2 自纠错的 5 条规则；
@@ -291,7 +297,9 @@ public ResponseEntity<?> createAccount(
 
 Thank you. Questions?
 
-GitHub: <https://github.com/jimmy0717/cleantest-agent>
+GitHub : <https://github.com/jimmy0717/cleantest-agent>
+PyPI   : <https://pypi.org/project/cleantest-agent/>
+（v0.1.1 已发布，sigstore 签名 wheel 挂在 GitHub Release 上）
 Contact: yang_qhd@buaa.edu.cn
 
 ---
@@ -308,5 +316,5 @@ Contact: yang_qhd@buaa.edu.cn
 | 1:40–1:55 | P6 | "我们设计了 4 个 RQ：复现性、方法对比、性能、成本，使用 DeepSeek 真实 API + A800 真实训练。" |
 | 1:55–2:20 | P7 | "结果：纯 LLM F1 仅 0.387，Hybrid 0.965，速度快约 15,000 倍；77.9% 漏检都是注解类。" |
 | 2:20–2:40 | P8 | "举例：LLM 看到 @PostMapping 觉得正常，但其实是噪声----它记不住 21,954 个模式。" |
-| 2:40–2:55 | P9 | "项目严格遵循软件工程实践：需求分析、模块化、36 测试 100% 通过、CI/CD 矩阵；并把 Lab 1 Reflection 落地到 Filter 2。" |
-| 2:55–3:00 | P10 | "四点贡献----Skill 架构、Hybrid 检测、AC 加速、Reflection + Qwen2.5-Coder-0.5B 微调（MAE 0.031 vs CodeGPT 0.080）。系统化设计在 AI 时代依然不可替代。谢谢！" |
+| 2:40–2:55 | P9 | "项目严格遵循软件工程实践：需求分析、模块化、36 测试 100% 通过、CI 矩阵 + tag 驱动 CD（OIDC + sigstore），并把 Lab 1 Reflection 落地到 Filter 2。" |
+| 2:55–3:00 | P10 | "四点贡献：Skill 架构、Hybrid 检测（F1 0.965 vs 0.387）、AC 加速 11.5×、Reflection + Qwen2.5-Coder-0.5B 微调（MAE 0.0309 vs 0.0798）。`pip install cleantest-agent` 已可用。谢谢！" |
