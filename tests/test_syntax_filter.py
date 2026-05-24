@@ -1,6 +1,5 @@
 """Unit tests for syntax noise detection functions."""
 
-import pytest
 from cleantest_agent.parser_utils import (
     parse_java,
     detect_grammar_errors,

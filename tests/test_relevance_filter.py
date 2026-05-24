@@ -1,6 +1,5 @@
 """Unit tests for relevance detection functions."""
 
-import pytest
 from cleantest_agent.parser_utils import (
     parse_java,
     extract_src_methods,

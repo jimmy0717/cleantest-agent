@@ -1,7 +1,6 @@
 """Unit tests for coverage prediction filter."""
 
 import pandas as pd
-import pytest
 
 from cleantest_agent.pipeline import run_coverage_filter
 from cleantest_agent.report_generator import NoiseReport

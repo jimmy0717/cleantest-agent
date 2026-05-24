@@ -2,7 +2,6 @@
 
 import argparse
 import logging
-import sys
 from importlib import resources
 from pathlib import Path
 
