@@ -1,0 +1,113 @@
+{
+  "n_test": 46921,
+  "y_true_stats": {
+    "min": 0.011,
+    "max": 1.501,
+    "mean": 0.12705509260245945,
+    "median": 0.108
+  },
+  "y_pred_stats": {
+    "min": 0.00021995337738189846,
+    "max": 0.9999412298202515,
+    "mean": 0.12706273979126273,
+    "median": 0.11299101263284683
+  },
+  "threshold_sweep": [
+    {
+      "threshold": 0.01,
+      "positives": 0,
+      "positives_pct": 0.0,
+      "tp": 0,
+      "fp": 7,
+      "fn": 0,
+      "tn": 46914,
+      "precision": 0.0,
+      "recall": 0,
+      "f1": 0
+    },
+    {
+      "threshold": 0.03,
+      "positives": 3856,
+      "positives_pct": 8.22,
+      "tp": 942,
+      "fp": 687,
+      "fn": 2914,
+      "tn": 42378,
+      "precision": 0.5783,
+      "recall": 0.2443,
+      "f1": 0.3435
+    },
+    {
+      "threshold": 0.05,
+      "positives": 8390,
+      "positives_pct": 17.88,
+      "tp": 5089,
+      "fp": 1470,
+      "fn": 3301,
+      "tn": 37061,
+      "precision": 0.7759,
+      "recall": 0.6066,
+      "f1": 0.6808
+    },
+    {
+      "threshold": 0.075,
+      "positives": 14629,
+      "positives_pct": 31.18,
+      "tp": 11253,
+      "fp": 2182,
+      "fn": 3376,
+      "tn": 30110,
+      "precision": 0.8376,
+      "recall": 0.7692,
+      "f1": 0.802
+    },
+    {
+      "threshold": 0.1,
+      "positives": 21291,
+      "positives_pct": 45.38,
+      "tp": 17781,
+      "fp": 2425,
+      "fn": 3510,
+      "tn": 23205,
+      "precision": 0.88,
+      "recall": 0.8351,
+      "f1": 0.857
+    },
+    {
+      "threshold": 0.125,
+      "positives": 27361,
+      "positives_pct": 58.31,
+      "tp": 23786,
+      "fp": 2489,
+      "fn": 3575,
+      "tn": 17071,
+      "precision": 0.9053,
+      "recall": 0.8693,
+      "f1": 0.8869
+    },
+    {
+      "threshold": 0.15,
+      "positives": 32675,
+      "positives_pct": 69.64,
+      "tp": 29395,
+      "fp": 2404,
+      "fn": 3280,
+      "tn": 11842,
+      "precision": 0.9244,
+      "recall": 0.8996,
+      "f1": 0.9118
+    },
+    {
+      "threshold": 0.2,
+      "positives": 40097,
+      "positives_pct": 85.46,
+      "tp": 38006,
+      "fp": 2015,
+      "fn": 2091,
+      "tn": 4809,
+      "precision": 0.9497,
+      "recall": 0.9479,
+      "f1": 0.9488
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "framework": "paddlepaddle + paddlenlp",
+  "base_model": "Qwen/Qwen2.5-Coder-0.5B",
+  "n_params_million": 494.0,
+  "train_rows": 375338,
+  "valid_rows": 46915,
+  "epochs": 2,
+  "effective_batch_size": 64,
+  "max_seq_length": 512,
+  "learning_rate": 3e-05,
+  "lr_scheduler_type": "cosine",
+  "fp16": false,
+  "bf16": true,
+  "train_subsample": 1.0,
+  "train_runtime_sec": 11951.3,
+  "validation_metrics": {
+    "eval_loss": 0.0036531530786305666,
+    "eval_mae": 0.03042138861795675,
+    "eval_mse": 0.0036531533318128434,
+    "eval_rmse": 0.060441321393669444,
+    "eval_pearson_r": 0.7927426750243226,
+    "eval_spearman_rho": 0.8476835071211535,
+    "eval_runtime": 261.0893,
+    "eval_samples_per_second": 179.6895,
+    "eval_steps_per_second": 2.8113,
+    "progress_or_epoch": 2.0
+  }
+}
