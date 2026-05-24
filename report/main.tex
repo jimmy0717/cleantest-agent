@@ -106,6 +106,14 @@
 \title[CleanTest-Agent]{CleanTest-Agent: A Multi-Agent Skill-Orchestrated System for Unit Test Training Data Quality Assurance}
 
 \author{Yong Yang}
+\authornote{Source code, datasets, the trained Filter 3 checkpoint
+  metadata, and a reproducible end-to-end notebook are released
+  under the MIT license at
+  \url{https://github.com/jimmy0717/cleantest-agent}; a
+  pip-installable distribution is at
+  \url{https://pypi.org/project/cleantest-agent/}. See
+  Section~\ref{sec:availability} for the full availability
+  statement.}
 \affiliation{%
   \institution{Beihang University}
   \department{School of Software}
@@ -189,7 +197,15 @@ In this paper, we present \textbf{CleanTest-Agent}, a system that addresses thes
     \item \textbf{Empirical evaluation}: We compare four approaches (rule-based, zero-shot LLM, few-shot LLM, hybrid) and demonstrate that our hybrid approach achieves the best F1 (0.965) while the pure LLM approach achieves only 0.387, validated with real DeepSeek-V4-Flash API calls.
 \end{enumerate}
 
-The remainder of this paper is organized as follows. Section~\ref{sec:background} reviews related work on unit test generation, data quality, LLM-based code analysis, and agent skill architectures. Section~\ref{sec:requirements} presents a requirements analysis including stakeholder analysis, use cases, functional and non-functional requirements, and a traceability matrix. Section~\ref{sec:model-driven} defines the model-driven approach and contrasts it with the pure-LLM approach. Section~\ref{sec:design} details the system design including architecture, filter specifications, and the pipeline algorithm. Section~\ref{sec:implementation} covers the implementation with technology choices, design decisions, and testing strategy. Section~\ref{sec:evaluation} presents the experimental evaluation through four research questions, including a case study on real samples and an ablation study. Section~\ref{sec:discussion} discusses findings, lessons learned, connections to course topics, and threats to validity. Section~\ref{sec:conclusion} concludes the paper and outlines future work directions. Appendices provide LLM prompt templates, CI/CD configuration, the full noise report, noise type examples with real Java code, a complete API reference, and skill directory structure documentation.
+The remainder of this paper is organized as follows. Section~\ref{sec:background} reviews related work on unit test generation, data quality, LLM-based code analysis, and agent skill architectures. Section~\ref{sec:requirements} presents a requirements analysis including stakeholder analysis, use cases, functional and non-functional requirements, and a traceability matrix. Section~\ref{sec:model-driven} defines the model-driven approach and contrasts it with the pure-LLM approach. Section~\ref{sec:design} details the system design including architecture, filter specifications, and the pipeline algorithm. Section~\ref{sec:implementation} covers the implementation with technology choices, design decisions, and testing strategy. Section~\ref{sec:evaluation} presents the experimental evaluation through four research questions, including a case study on real samples and an ablation study. Section~\ref{sec:discussion} discusses findings, lessons learned, connections to course topics, and threats to validity. Section~\ref{sec:conclusion} concludes the paper and outlines future work directions. Section~\ref{sec:availability} states code, data, and reproducibility links. Appendices provide LLM prompt templates, CI/CD configuration, the full noise report, noise type examples with real Java code, a complete API reference, and skill directory structure documentation.
+
+All artefacts described in this paper --- including the
+Python package \texttt{cleantest-agent}, the four SKILL.md skill
+bundles, the 36-case pytest suite, the GitHub Actions CI matrix, the
+tag-driven PyPI publish workflow with sigstore signing, the curated
+Filter 3 model-mode metrics, and the LaTeX sources of this paper
+---  are released under the MIT license and available at
+\url{https://github.com/jimmy0717/cleantest-agent}~\cite{yang2026cleantestagent}.
 
 \subsection{Scope and Context}
 
@@ -3076,6 +3092,78 @@ Key results:
 This project reinforces a claim that the principles taught in \textit{Software Requirements Analysis and System Design} --- stakeholder analysis, use case modeling, requirements traceability, layered architecture, design patterns, and systematic testing --- remain essential even when building AI-powered systems. We argue, in fact, that these principles become \textit{more} important in the AI era, because the temptation to ``just ask the LLM'' leads to solutions that are expensive, unreliable, and opaque. The model-driven approach we describe, which decomposes the problem and applies the right tool to each subtask, achieves both higher quality (F1 = 0.965 vs. 0.387) and roughly 13{,}000--15{,}000$\times$ faster execution (0.11s vs. 1,642s per 500 samples) than the pure-LLM alternative.
 
 The skill-based architecture also illustrates how modern software design patterns adapt to new paradigms: the \texttt{SKILL.md} protocol is effectively an interface contract between the skill author and the AI coding assistant runtime --- a natural evolution of API design for the age of natural-language-driven software interaction.
+
+% ============================================================================
+\section{Code and Data Availability}
+\label{sec:availability}
+% ============================================================================
+
+In line with the ACM Artifact Review and Badging policy, all
+artefacts described in this paper are publicly available under the
+MIT license. Table~\ref{tab:availability} maps every empirical claim
+in the paper to its reproducible source.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Code and data availability map.}
+\label{tab:availability}
+\begin{tabularx}{\linewidth}{@{}lY@{}}
+\toprule
+\textbf{Artefact} & \textbf{Location} \\
+\midrule
+Source repository (MIT)            & \url{https://github.com/jimmy0717/cleantest-agent} \\
+Python package (pip-installable)   & \url{https://pypi.org/project/cleantest-agent/} \\
+Tagged release (this paper)        & \url{https://github.com/jimmy0717/cleantest-agent/releases/tag/v0.1.1} \\
+This paper (PDF, signed asset)     & \url{https://github.com/jimmy0717/cleantest-agent/releases/download/v0.1.0/main.pdf} \\
+SKILL.md skill bundles (4)         & \texttt{skills/} in the repository \\
+Filter 3 training notebook         & \texttt{experiments/main-final.ipynb} \\
+Filter 3 metrics (held-out test)   & \texttt{experiments/results/coverage\_run/test\_metrics.json} \\
+Bundled 5{,}000-row sample         & \texttt{data/sample\_5000.csv} (Methods2Test, MIT) \\
+Annotation dictionary (21{,}954 patterns) & \texttt{cleantest\_agent/data/noise\_modifier\_fm.txt} \\
+500-sample evaluation labels       & \texttt{experiments/results/labeled\_samples.csv} \\
+DeepSeek baseline runner           & \texttt{experiments/run\_baselines.py} \\
+CI workflow (Python 3.10/3.11/3.12) & \texttt{.github/workflows/ci.yml} \\
+CD workflow (PyPI + sigstore)      & \texttt{.github/workflows/publish.yml} \\
+Upstream LessIsMore-FSE2025 data   & \url{https://doi.org/10.5281/zenodo.15347368} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\textbf{Reproducing the headline results.}
+The 593{,}953-sample full-pipeline run reported in
+Section~\ref{sec:evaluation} (RQ1) is reproducible by cloning the
+repository, exporting Methods2Test via the LessIsMore-FSE2025
+replication package, and invoking
+\texttt{cleantest --input\_csv all\_train.csv --output\_dir out/}.
+The 500-sample stratified subset evaluation (RQ2--RQ4) is
+reproducible via
+\texttt{python experiments/run\_baselines.py}, which issues real
+DeepSeek-V4-Flash API calls; the per-sample predictions used for
+the F1\,=\,0.965 hybrid result and the LLM zero-shot / few-shot
+baselines are checked into
+\texttt{experiments/results/labeled\_samples.csv}. The Filter 3
+model-mode held-out MAE\,=\,0.0309 result is reproducible from
+\texttt{experiments/main-final.ipynb} on a single A800 80\,GB; the
+metrics archived under
+\texttt{experiments/results/coverage\_run/} are the verbatim
+artefacts that produced the numbers in
+Section~\ref{sec:evaluation} (RQ3 model mode).
+
+\textbf{Supply-chain integrity.}
+PyPI distributions for v0.1.1 onward are uploaded via OIDC Trusted
+Publisher (no long-lived API token) and signed with sigstore;
+the signed wheel and source bundles are attached as release assets
+on GitHub. End users can verify provenance with the
+\texttt{sigstore verify identity} command documented in
+\texttt{docs/PYPI-PUBLISHING.md}.
+
+\textbf{Issue tracking and contribution.}
+The repository ships with structured GitHub issue templates (bug,
+feature, question), a pull-request template, the Contributor
+Covenant 2.1 code of conduct, and a development-workflow
+\texttt{CONTRIBUTING.md}. Bug reports, feature requests, and pull
+requests are welcomed at the URLs above.
 
 % ============================================================================
 % Acknowledgements (ACM-recommended `acks` environment, not `\section{...}`).

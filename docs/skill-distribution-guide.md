@@ -54,7 +54,9 @@ Verify:
 
 ```bash
 python -c "import cleantest_agent; print(cleantest_agent.__version__)"
-# 0.1.0
+# X.Y.Z   (e.g. 0.1.1; the version is resolved at import time from
+#          the installed distribution metadata, so it always tracks
+#          whatever pip installed)
 
 cleantest --help
 # usage: cleantest [-h] --input_csv INPUT_CSV --output_dir OUTPUT_DIR ...

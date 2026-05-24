@@ -9,7 +9,21 @@ Public API:
     )
 """
 
-__version__ = "0.1.0"
+# Single source of truth for the version is `pyproject.toml`;
+# `__version__` is resolved at import time from the installed
+# distribution metadata so the two cannot drift out of sync.
+# Falls back to "0.0.0+unknown" only when the package is imported
+# directly from a source tree that has never been `pip install`-ed
+# (e.g. by running tests from a freshly cloned repo without pip);
+# all CI / CD / PyPI / sigstore paths always go through an install.
+try:
+    from importlib.metadata import PackageNotFoundError, version as _pkg_version
+    try:
+        __version__ = _pkg_version("cleantest-agent")
+    except PackageNotFoundError:
+        __version__ = "0.0.0+unknown"
+except ImportError:  # pragma: no cover - importlib.metadata is stdlib on 3.8+
+    __version__ = "0.0.0+unknown"
 
 from cleantest_agent.data_loader import load_csv, save_csv
 from cleantest_agent.report_generator import NoiseReport
