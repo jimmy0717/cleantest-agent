@@ -1,80 +1,186 @@
+<div align="center">
+
+<!-- Replace this line with the hero image once you generate one. See
+     docs/HERO-IMAGE-PROMPT.md for the prompt to use with nano banana
+     (Gemini 2.5 Flash Image) or any other text-to-image model. -->
+<img src="docs/assets/hero.png" alt="CleanTest-Agent" width="720">
+
 # CleanTest-Agent
 
-A multi-agent skill-orchestrated system that cleans noisy unit test training
-data using a rule-based pipeline with selective LLM enhancement. This is the
-final-project artifact for the *Software Requirements Analysis and System
-Design* course at the School of Software, Beihang University.
+**Strip noise from unit-test training data in seconds, not hours --- with
+rules where rules win, and an LLM only where it actually helps.**
 
-- Python 3.10+
-- 36 pytest test cases (all passing on Python 3.10/3.11/3.12 in GitHub Actions)
-- F1 = 0.965 on a 500-sample stratified subset of Methods2Test, vs. 0.387 for
-  the best pure-LLM baseline (DeepSeek-V4-Flash few-shot)
-- MIT license
+[![CI](https://github.com/jimmy0717/cleantest-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/jimmy0717/cleantest-agent/actions/workflows/ci.yml)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue.svg)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![SKILL.md](https://img.shields.io/badge/protocol-SKILL.md-purple.svg)](https://github.com/anthropics/skills)
+[![Methods2Test](https://img.shields.io/badge/dataset-Methods2Test-orange.svg)](https://github.com/microsoft/methods2test)
 
-Quick links: [Quick Start](#quick-start) ·
+[Quick start](#quick-start) ·
+[Why this exists](#why-this-exists) ·
 [Results](#results) ·
-[Architecture](#architecture) ·
-[Skills Usage](#code-assistant-integration) ·
+[How it works](#how-it-works) ·
+[Skills usage](#use-it-from-a-coding-assistant) ·
 [Paper](report/main.tex)
 
-## For Course Reviewers
+</div>
 
-This repository is the submission artefact for the *Software Requirements
-Analysis and System Design* final project. The deliverables map to the
-following entry points:
+---
 
-| Deliverable | Location |
-|---|---|
-| Research report (LaTeX source, ≥ 50 pages) | [`report/main.tex`](report/main.tex), bibliography [`report/references.bib`](report/references.bib) |
-| Compiled report (PDF) | [`report/Final Report-V3.pdf`](report/) |
-| Slides (≤ 10 pages, 3-min talk) | [`ppt/slides.md`](ppt/slides.md) and [`ppt/PPT大纲.md`](ppt/PPT大纲.md) |
-| Reproducible code | this repository (`cleantest_agent/`, `skills/`, `tests/`) |
-| Test suite (36 cases) | [`tests/`](tests/), `make test` |
-| CI pipeline | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) |
-| Real DeepSeek API experiments | [`experiments/run_baselines.py`](experiments/run_baselines.py); results under `experiments/results/` |
-| Filter 3 model-mode training | [`main.ipynb`](main.ipynb), scripts under [`skills/cleantest-coverage-filter/scripts_paddle/`](skills/cleantest-coverage-filter/scripts_paddle/), held-out metrics under `experiments/results/coverage_run/` |
-| Code-assistant skill bundles | [`skills/`](skills/), each with its own `SKILL.md` |
-| Skill installation guide | [`docs/skill-distribution-guide.md`](docs/skill-distribution-guide.md) |
-| Code-assistant usage guide | [`docs/code-assistant-guide.md`](docs/code-assistant-guide.md) |
-| Baidu AI Studio training guide | [`docs/training-on-baidu-aistudio.md`](docs/training-on-baidu-aistudio.md) |
+## What it does
 
-## Background
+CleanTest-Agent takes a CSV of `(focal_method, test_case)` pairs --- the
+canonical format used by Methods2Test, ATLAS, and most modern test-generation
+benchmarks --- and removes the noisy ones, leaving only the samples that
+actually teach a model how to write good tests.
 
-The [CleanTest paper](https://arxiv.org/abs/2502.14212) (FSE 2025
-Distinguished Paper Award) reports that 43.52% of the Methods2Test dataset
-(780,944 test cases from 91,385 projects) contains noisy samples, and that
-filtering this noise improves downstream branch coverage by an average of
-67.46% across CodeBERT, AthenaTest, StarCoder, and CodeLlama-7B.
+It does this through three composable Agent Skills (each follows the
+`SKILL.md` protocol, so they drop directly into CodeBuddy, Claude Code,
+or Cursor):
 
-A natural question is whether a single LLM call per sample can replace the
-rule-based pipeline. We evaluated this on real DeepSeek-V4-Flash API calls
-and found that it cannot — the answer is reported below.
+1. **Syntax filter** --- AST parsing with tree-sitter plus an Aho-Corasick
+   automaton over a 21,954-pattern annotation dictionary.
+2. **Relevance filter** --- AST name matching with an opt-in 5-rule LLM
+   reflection step for borderline indirect-testing cases.
+3. **Coverage filter** --- a JaCoCo-label scan by default, or a fine-tuned
+   Qwen2.5-Coder-0.5B regression model when ground-truth labels are missing.
+
+The whole pipeline processes 593,953 deduplicated Methods2Test samples in
+under three minutes on a laptop. A single-LLM-per-sample baseline takes
+~20 days and still misses 78% of the noise.
+
+## Why this exists
+
+The CleanTest paper (Zhang et al., FSE 2025 Distinguished Paper) showed
+that 43.5% of the Methods2Test corpus is noisy, and that filtering the
+noise improves downstream branch coverage by ~67% across CodeBERT,
+AthenaTest, StarCoder, and CodeLlama-7B on Defects4J. Their pipeline is
+effective but exists as one-shot scripts: hard to compose, hard to drop
+into a coding assistant, and missing a path for projects that have no
+JaCoCo labels.
+
+This repository is a from-scratch reimplementation that splits the
+pipeline into reusable skills, swaps the original CodeGPT coverage model
+for a fine-tuned Qwen2.5-Coder-0.5B (~2.6x lower MAE), and adds an
+optional Reflection step on the LLM relevance check. It is also the
+source artefact for the companion 67-page paper under
+[`report/`](report/).
+
+## Use it if...
+
+- ...you train code models on Methods2Test, ATLAS, or any
+  `(focal_method, test)` corpus and want to remove noisy samples
+  before training.
+- ...you want a **rule-first** pipeline (deterministic, free, fast) with
+  an LLM only on the borderline cases.
+- ...you want skills that drop into CodeBuddy / Claude Code / Cursor and
+  trigger on natural language ("clean my test data", "check this test's
+  relevance").
+- ...you want to predict branch coverage for a `(focal, test)` pair
+  without running JaCoCo --- with held-out MAE of 0.031 from a 0.5B
+  fine-tuned model.
+
+If you want a dialogue-based "ask the LLM if this looks like a bad test"
+service, this is **not** that --- the whole point of this project is
+that you do not need to call the LLM 593,953 times.
+
+## Quick start
+
+```bash
+git clone https://github.com/jimmy0717/cleantest-agent.git
+cd cleantest-agent
+pip install -e ".[dev]"
+
+# Clean the bundled 5,000-row sample (no API needed):
+cleantest --input_csv data/sample_5000.csv --output_dir output/
+
+# Inspect the noise report:
+cat output/noise_report.json
+```
+
+You should see something like:
+
+```json
+{
+  "total_input": 5000,
+  "total_kept": 2389,
+  "removed": {
+    "unnecessary_annotation": 2122,
+    "no_relevance":           201,
+    "syntax_error":           107,
+    "non_english_literal":     66,
+    "ambiguous_data_type":     63,
+    "missing_implementation":  12,
+    "empty_exception":          5
+  },
+  "wall_clock_seconds": 1.4
+}
+```
+
+To enable the optional LLM relevance check on borderline samples, set an
+OpenAI-compatible endpoint and add `--llm_enhance`:
+
+```bash
+export OPENAI_API_KEY="your-key"
+export OPENAI_BASE_URL="https://api.deepseek.com/v1"
+cleantest --input_csv data/sample_5000.csv \
+          --output_dir output/ \
+          --llm_enhance --reflection
+```
 
 ## Results
 
-DeepSeek-V4-Flash on 500 stratified samples (231 noise / 269 clean):
+We ran the four pipelines below on a 500-sample stratified subset of
+Methods2Test (231 noise / 269 clean), with real DeepSeek-V4-Flash API
+calls for the LLM rows.
 
 | Method | Precision | Recall | F1 | Time (500 samples) |
-|--------|:---------:|:------:|:----:|:---------:|
-| Rule-based (ours) | 1.000 | 1.000 | 1.000 | 0.11 s |
+|---|:---:|:---:|:---:|:---:|
+| Rule-based (ours) | 1.000 | 1.000 | **1.000** | 0.11 s |
 | LLM zero-shot | 0.505 | 0.221 | 0.307 | 1,487 s |
 | LLM few-shot | 0.534 | 0.303 | 0.387 | 1,642 s |
-| Hybrid (ours) | 0.974 | 0.956 | 0.965 | < 60 s |
+| Hybrid (rules + LLM borderline only) | 0.974 | 0.956 | **0.965** | < 60 s |
 
-Key findings:
+Why the LLM baselines fail: 78% of the noise in Methods2Test is "this
+focal method is annotated with `@ApiOperation` / `@SwaggerDefinition` /
+... and is therefore not useful for test-generation training". The LLM
+has no way to recall the 21,954-pattern dictionary that defines this
+class of noise; the Aho-Corasick automaton recalls it deterministically
+in microseconds.
 
-- Pure LLM zero-shot misses 77.9% of noisy samples (recall = 0.221).
-- Rules are roughly 13,000–15,000× faster than the LLM baselines on this task.
-- LLM failure is concentrated on annotation noise, where it cannot recall the
-  21,954-pattern dictionary used by the rule-based filter.
-- The hybrid pipeline keeps rules as the primary classifier and queries the
-  LLM only on the ~12.7% of samples where AST name matching is inconclusive.
-- A 5-rule reflection mechanism (applied only inside Filter 2's LLM stage)
-  changed 7 out of 45 zero-overlap verdicts (15.6% change rate), rescuing
-  5 samples (11.1% rescue rate) with 6/7 (85.7%) of the changes verified
-  correct by manual inspection.
+The full evaluation (RQ1-RQ4 + Filter 3 model-mode validation + a case
+study + ablation study) is in [`report/main.tex`](report/main.tex)
+Section 7. Per-sample predictions are archived under
+[`experiments/results/labeled_samples.csv`](experiments/results/labeled_samples.csv).
 
-## Architecture
+### Filter 3: replacing CodeGPT with Qwen2.5-Coder-0.5B
+
+The default Filter 3 reads `condition_cover_rate` straight from a
+JaCoCo column. For label-free settings, we fine-tuned
+Qwen2.5-Coder-0.5B on a stratified 80/10/10 split of LessIsMore-FSE2025
+`filter_train.csv` (469,174 rows) on a single A800-SXM4-80 GB
+(bf16, batch 64, max_seq 512, lr 3e-5 cosine, 2 epochs, ~3.3 h
+wall-clock) and evaluated it on the held-out 46,921-sample test split:
+
+| Metric | This work (Qwen2.5-Coder-0.5B) | CodeGPT (Zhang et al., FSE 2025) |
+|---|---:|---:|
+| MAE | **0.0309** | 0.0798 (~2.6x higher) |
+| MSE | **0.0039** | 0.0105 (~2.7x higher) |
+| RMSE | **0.0628** | -- |
+| R-squared | **0.604** | -- |
+| Pearson r | **0.778** | -- |
+| Spearman rho | **0.848** | -- |
+| F1 at tau = 0.10 | **0.857** | -- |
+| F1 at tau = 0.15 | **0.912** | -- |
+
+Raw artefacts (`training_metrics.json`, `metrics.jsonl`,
+`test_metrics.json`, `test_pred_a800.csv`, `test_threshold_sweep.json`)
+live under
+[`experiments/results/coverage_run/`](experiments/results/coverage_run/).
+The end-to-end notebook that produced them is
+[`experiments/main-final.ipynb`](experiments/main-final.ipynb).
+
+## How it works
 
 ```
 User / Coding Assistant
@@ -103,164 +209,137 @@ User / Coding Assistant
          Clean dataset + noise report
 ```
 
-Each filter is an independent Agent Skill (SKILL.md protocol) — composable,
-testable, and invocable via natural language.
+Each filter is an independent Agent Skill; they share state through a
+small `NoiseReport` accumulator and emit a single JSON + Markdown report
+at the end.
 
-## Quick Start
+## How it compares to the alternatives
 
-### Install and run (no API needed)
+| | Original CleanTest scripts | ChatUniTest / pure-LLM workflows | Hand-rolled regex pipeline | **CleanTest-Agent** |
+|---|:---:|:---:|:---:|:---:|
+| Faithful to the FSE 2025 paper's definitions | yes | partial | varies | **yes** |
+| Composable into coding-assistant skills | no | partial | no | **yes** |
+| Deterministic on the rule-decidable cases | yes | no | usually | **yes** |
+| Aho-Corasick acceleration | no (linear scan) | n/a | rare | **yes (~11.5x)** |
+| Optional Reflection on borderline LLM verdicts | no | no | no | **yes** |
+| Filter 3 without JaCoCo labels | no | no | no | **yes (Qwen 0.5B)** |
+| Cost on 593,953 samples | ~free | ~$35-58 (real-API) | ~free | **~$4.5** |
 
-```bash
-git clone https://github.com/jimmy0717/cleantest-agent.git
-cd cleantest-agent
+## Use it from a coding assistant
 
-# Recommended: editable install (registers the `cleantest_agent` package
-# and the `cleantest` console script, and ships the 21,954-pattern
-# dictionary as package data)
-pip install -e ".[dev]"
+CleanTest-Agent ships four skills that follow the
+[SKILL.md protocol](https://github.com/anthropics/skills) and drop
+directly into CodeBuddy, Claude Code, Cursor, or any assistant that
+implements the protocol.
 
-# Run pipeline on the bundled 5,000-row sample (rules only)
-cleantest --input_csv data/sample_5000.csv --output_dir output/
-# Equivalent:
-# python -m cleantest_agent.pipeline --input_csv data/sample_5000.csv --output_dir output/
-
-# Run tests
-make test    # 36 tests, all passing
-```
-
-If you only need the runtime (no test/lint tooling), use `pip install -e .`
-or `pip install -r requirements.txt` instead of `".[dev]"`.
-
-For users who want to drop the four skills into a coding assistant
-**without cloning this repository**, see
-[docs/skill-distribution-guide.md](docs/skill-distribution-guide.md).
-
-### Run the LLM comparison experiment
-
-```bash
-# Configure any OpenAI-compatible endpoint
-export OPENAI_API_KEY="your-key"
-export OPENAI_BASE_URL="https://api.deepseek.com/v1"   # or any compatible endpoint
-
-# Run the full experiment (500 samples, ~50 minutes)
-python experiments/run_baselines.py \
-    --input_csv data/sample_5000.csv \
-    --sample_size 500 \
-    --model deepseek-chat
-```
-
-### Install as coding-assistant skills
-
-```bash
-make install   # Copies skills to ~/.codebuddy/skills/
-
-# Then in your coding assistant, simply ask:
-#   "Help me clean this unit test training dataset"
-#   "Filter noisy tests from my CSV"
-#   "Check if this test is relevant to the focal method"
-```
-
-## Code Assistant Integration
-
-Works with CodeBuddy, Claude Code, Cursor, and any assistant that supports the
-SKILL.md protocol.
-
-| Skill | What it does | Trigger |
-|-------|--------------|---------|
-| `cleantest-pipeline` | Full pipeline orchestration | "clean test data", "run cleantest" |
-| `cleantest-syntax-filter` | Syntax noise detection (AST + Aho-Corasick) | "check syntax noise" |
-| `cleantest-relevance-filter` | Test–focal method relevance + reflection | "check test relevance" |
-| `cleantest-coverage-filter` | Branch coverage prediction | "predict coverage" |
-
-See [docs/code-assistant-guide.md](docs/code-assistant-guide.md) for detailed
-usage.
-
-## Why a Pure LLM Falls Short
-
-Consider a focal method whose only "noise" is annotation metadata:
-
-```java
-@ApiOperation(value = "Get all users")
-@GetMapping("/api/users")
-public List<User> getAllUsers() {
-    return userRepository.findAll();
-}
-```
-
-| | Rules (Aho-Corasick) | LLM (DeepSeek-V4-Flash) |
+| Skill | What it does | Triggers on |
 |---|---|---|
-| Verdict | NOISE | CLEAN |
-| Reason | Matches `@ApiOperation` in 21,954-pattern dictionary | "Standard Spring annotation, looks normal" |
-| Time | < 0.01 ms | ~3,000 ms |
-| Cost | 0 | API tokens |
+| `cleantest-pipeline` | full pipeline orchestration | "clean test data", "run cleantest" |
+| `cleantest-syntax-filter` | syntax noise (AST + Aho-Corasick) | "check syntax noise" |
+| `cleantest-relevance-filter` | test-focal relevance + reflection | "check test relevance" |
+| `cleantest-coverage-filter` | branch coverage prediction | "predict coverage" |
 
-The LLM does not know that `@ApiOperation` is "unnecessary for test
-generation training" — that is a domain-specific definition derived from
-expert interviews in the original CleanTest study. Encoding the full
-21,954-pattern dictionary into a prompt is not feasible.
+Install all four into the local CodeBuddy skills directory:
 
-## Project Structure
+```bash
+make install   # copies skills/* to ~/.codebuddy/skills/
+```
+
+Then in your assistant, just ask in natural language:
+
+> "Help me clean this unit test training dataset under
+> `~/datasets/methods2test_train.csv` and write the report to
+> `~/datasets/cleaned/`."
+
+For the full distribution recipe (without cloning this repo), see
+[`docs/skill-distribution-guide.md`](docs/skill-distribution-guide.md).
+For a worked example of each skill, see
+[`docs/code-assistant-guide.md`](docs/code-assistant-guide.md).
+
+## Project structure
 
 ```
 cleantest-agent/
-├── cleantest_agent/            # Installable Python package (`pip install -e .`)
-│   ├── __init__.py             # Public API: run_pipeline, run_syntax_filter, ...
-│   ├── pipeline.py             # Orchestrator (Aho-Corasick + 3 filters)
-│   ├── parser_utils.py         # tree-sitter AST utilities
-│   ├── llm_client.py           # OpenAI-compatible LLM wrapper
-│   ├── data_loader.py          # CSV I/O
-│   ├── report_generator.py     # JSON + Markdown reports
-│   └── data/                   # Bundled package data
-│       └── noise_modifier_fm.txt   # 21,954-pattern dictionary
-├── skills/                     # 4 Agent Skills (SKILL.md + scripts)
-│   ├── cleantest-pipeline/
-│   ├── cleantest-syntax-filter/
-│   ├── cleantest-relevance-filter/
-│   └── cleantest-coverage-filter/
-├── tests/                      # 36 pytest test cases
-├── experiments/                # Baseline comparison scripts
-│   ├── run_baselines.py        # Real API experiment
-│   ├── simulate_baselines.py   # Offline simulation (legacy)
-│   └── results/                # Experiment data (JSON + CSV)
-├── data/                       # Sample dataset (5,000 rows)
-├── docs/                       # User-facing guides
-│   ├── code-assistant-guide.md
-│   └── skill-distribution-guide.md
-├── .github/workflows/ci.yml    # CI: Python 3.10/3.11/3.12 matrix
-├── report/                     # LaTeX research paper (ACM format)
-├── pyproject.toml              # Package metadata + console script
-└── Makefile                    # dev-install, test, lint, install, clean
+|-- cleantest_agent/            installable Python package
+|   |-- pipeline.py             orchestrator (Aho-Corasick + 3 filters)
+|   |-- parser_utils.py         tree-sitter AST utilities
+|   |-- llm_client.py           OpenAI-compatible wrapper
+|   |-- report_generator.py     JSON + Markdown reports
+|   `-- data/noise_modifier_fm.txt   21,954-pattern dictionary
+|-- skills/                     four SKILL.md skill bundles
+|-- tests/                      36 pytest test cases
+|-- experiments/                run_baselines.py + results/
+|-- data/sample_5000.csv        bundled 5,000-row Methods2Test subset
+|-- docs/                       user-facing guides
+|-- report/                     LaTeX research paper (ACM acmlarge)
+|-- .github/workflows/ci.yml    CI: Python 3.10/3.11/3.12 matrix
+`-- pyproject.toml              package metadata + `cleantest` console script
 ```
 
-## Technical Notes
+## Contributing
 
-| Component | Technology | Reason |
-|-----------|-----------|--------|
-| Pattern matching | Aho-Corasick automaton | ~11.5× pipeline speedup over linear scan of 21,954 patterns |
-| AST parsing | tree-sitter (C-based) | Error-tolerant, < 0.1 ms per method, concrete syntax trees |
-| Coverage filter | Label scan (default) or fine-tuned Qwen2.5-Coder-0.5B regression (optional model mode) | Label mode is used by all reported numbers in §7.5; model mode validation is reported in §7.5 (`tab:filter3-model-mode`). Replaces the original CleanTest's CodeGPT recipe. |
-| LLM integration | OpenAI-compatible SDK | Works with GPT-4o-mini, DeepSeek, Qwen, Claude |
-| Reflection | 5-rule structured self-correction | Reduces false removals on borderline indirect tests |
-| Skills protocol | SKILL.md | Cross-IDE compatible (CodeBuddy, Claude Code, Cursor) |
+Bug reports, feature requests, and pull requests are all welcome.
+The starting points are:
+
+- [`CONTRIBUTING.md`](CONTRIBUTING.md) for the development workflow,
+- [`.github/ISSUE_TEMPLATE/`](.github/ISSUE_TEMPLATE/) for filing
+  bug / feature / question issues,
+- [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) for the (Contributor
+  Covenant 2.1) baseline expectations.
+
+If you fix a bug, the convention is: write a failing test first
+(`tests/`), confirm it fails on `main`, then push the fix; see
+[`tests/`](tests/) for representative examples.
 
 ## Citation
 
+If you use CleanTest-Agent in academic work, please cite both the
+original CleanTest paper and this implementation:
+
 ```bibtex
-@misc{yang2026cleantest-agent,
-  title  = {CleanTest-Agent: A Multi-Agent Skill-Orchestrated System for
-            Unit Test Training Data Quality Assurance},
+@inproceedings{zhang2025cleantest,
+  title     = {Less is More: On the Importance of Data Quality for Unit Test Generation},
+  author    = {Zhang, Junwei and Hu, Xing and Gao, Shan and Xia, Xin and Lo, David and Li, Shanping},
+  booktitle = {Proceedings of the 33rd ACM International Conference on the Foundations of Software Engineering (FSE)},
+  year      = {2025},
+  note      = {Distinguished Paper Award; arXiv:2502.14212}
+}
+
+@misc{yang2026cleantestagent,
+  title  = {{CleanTest-Agent}: A Multi-Agent Skill-Orchestrated System for Unit Test Training Data Quality Assurance},
   author = {Yang, Yong},
   year   = {2026},
   howpublished = {\url{https://github.com/jimmy0717/cleantest-agent}}
 }
 ```
 
-Based on:
-
-- Zhang et al., *Less is More: On the Importance of Data Quality for Unit
-  Test Generation*, FSE 2025 (Distinguished Paper Award).
-  <https://arxiv.org/abs/2502.14212>
-
 ## License
 
-MIT.
+[MIT](LICENSE). The bundled `data/sample_5000.csv` is a derivative
+subset of Microsoft's MIT-licensed
+[Methods2Test](https://github.com/microsoft/methods2test) dataset and is
+redistributed under the same terms; see [`data/README.md`](data/README.md)
+for the full attribution.
+
+---
+
+## Submission notes (course reviewers)
+
+This repository was originally produced as the final-project artefact
+for *Software Requirements Analysis and System Design* at the School
+of Software, Beihang University. The deliverables map to the following
+entry points:
+
+| Deliverable | Location |
+|---|---|
+| Research report (LaTeX, 67 pp.) | [`report/main.tex`](report/main.tex), bibliography [`report/references.bib`](report/references.bib), compiled PDF [`report/main.pdf`](report/main.pdf) |
+| Slides (10 pages, 3-min talk) | [`ppt/slides.md`](ppt/slides.md) (English), [`ppt/PPT大纲.md`](ppt/PPT大纲.md) (Chinese outline) |
+| Reproducible code | this repository |
+| Test suite (36 cases) | [`tests/`](tests/), `make test` |
+| CI pipeline | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) |
+| Real DeepSeek API experiments | [`experiments/run_baselines.py`](experiments/run_baselines.py) |
+| Filter 3 model-mode training | [`experiments/main-final.ipynb`](experiments/main-final.ipynb) (end-to-end), [`skills/cleantest-coverage-filter/scripts_paddle/`](skills/cleantest-coverage-filter/scripts_paddle/) |
+| Code-assistant skill bundles | [`skills/`](skills/) |
+| Skill installation guide | [`docs/skill-distribution-guide.md`](docs/skill-distribution-guide.md) |
+| Code-assistant usage guide | [`docs/code-assistant-guide.md`](docs/code-assistant-guide.md) |
+| Baidu AI Studio training guide | [`docs/training-on-baidu-aistudio.md`](docs/training-on-baidu-aistudio.md) |

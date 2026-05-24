@@ -1,0 +1,25 @@
+name: Question
+description: Ask a usage / integration question.
+title: "[Q] "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before filing, please skim:
+        - [`README.md`](../../README.md) Quick start and Use it if... sections,
+        - [`docs/code-assistant-guide.md`](../../docs/code-assistant-guide.md),
+        - the closed issues that match your keywords.
+
+        If none of those answer the question, please ask away here.
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: What you have already tried
+      description: Commands you ran, docs you read, related issues you found.

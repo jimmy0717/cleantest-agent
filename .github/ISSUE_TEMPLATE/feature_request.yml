@@ -1,0 +1,33 @@
+name: Feature request
+description: Propose a new capability or filter.
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: use_case
+    attributes:
+      label: What is the use case?
+      description: 2--3 sentences. Who benefits, and in what concrete situation?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed shape of the change
+      description: |
+        If you have an idea of how the feature should look (a new flag, a
+        new SKILL.md skill, a new noise type, ...), sketch it here.
+        Code-block sketches are welcome.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered
+      description: Existing flags or workarounds you tried first, and why they did not fit.
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope check
+      options:
+        - label: This change keeps the rule-based path deterministic and free.
+        - label: This change does not require calling the LLM on every sample.
+        - label: I am willing to send a PR for this (optional).
