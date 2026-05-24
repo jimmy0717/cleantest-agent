@@ -109,3 +109,16 @@ paper/
 方案细化.md
 cleantest-agent-v*.zip
 ~$*.docx
+
+# PPT presentation deliverables. The Marp source `ppt/slides-marp.md`
+# and the build script `ppt/build-deck.sh` are the source of truth and
+# remain tracked; the rendered .pdf / .pptx / .html / .key artefacts
+# are author-side deliverables, deliberately not committed.
+ppt/CleanTest-Agent.pdf
+ppt/CleanTest-Agent.pptx
+ppt/CleanTest-Agent.html
+ppt/CleanTest-Agent.key
+ppt/preview-p*.png
+ppt/_p*.pdf
+# School-provided PPT template (BUAA branding; not redistributed).
+ppt/北航PPT版式*.pptx
