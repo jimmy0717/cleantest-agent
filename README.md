@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/assets/hero.png" alt="CleanTest-Agent" width="720">
+<img src="https://raw.githubusercontent.com/jimmy0717/cleantest-agent/main/docs/assets/hero.png" alt="CleanTest-Agent" width="720">
 
 # CleanTest-Agent
 
@@ -8,6 +8,7 @@
 rules where rules win, and an LLM only where it actually helps.**
 
 [![CI](https://github.com/jimmy0717/cleantest-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/jimmy0717/cleantest-agent/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/cleantest-agent.svg)](https://pypi.org/project/cleantest-agent/)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![SKILL.md](https://img.shields.io/badge/protocol-SKILL.md-purple.svg)](https://github.com/anthropics/skills)
@@ -82,6 +83,15 @@ service, this is **not** that --- the whole point of this project is
 that you do not need to call the LLM 593,953 times.
 
 ## Quick start
+
+Install from PyPI:
+
+```bash
+pip install cleantest-agent
+```
+
+Or install from source for development (also installs the bundled
+sample dataset and tests):
 
 ```bash
 git clone https://github.com/jimmy0717/cleantest-agent.git

@@ -1,0 +1,115 @@
+name: Publish to PyPI
+
+# Triggered when a v* tag is pushed to the repository (e.g. v0.1.0,
+# v0.1.1, v0.2.0). Builds an sdist + wheel, uploads them to PyPI via
+# OIDC Trusted Publisher (no API token required), signs them with
+# sigstore, and attaches the signed artefacts to the matching
+# GitHub Release.
+#
+# Prerequisites (one-time, configured outside this workflow):
+#   1. PyPI account on https://pypi.org owns or claims the
+#      `cleantest-agent` project name.
+#   2. On https://pypi.org/manage/account/publishing/ register a
+#      "pending" Trusted Publisher with these exact values:
+#         Owner       : jimmy0717
+#         Repository  : cleantest-agent
+#         Workflow    : publish.yml
+#         Environment : pypi
+#      The first successful run automatically promotes the pending
+#      claim into the active publisher.
+#
+# Manual dispatch is also supported for emergency re-publishes; the
+# trigger reads the most recent v* tag in that case.
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write       # needed to upload signed artefacts to the Release
+  id-token: write       # needed for OIDC Trusted Publisher and sigstore
+
+jobs:
+  build:
+    name: Build sdist + wheel
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install build backend
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install build twine
+
+      - name: Build distributions
+        run: python -m build
+
+      - name: Validate metadata with twine
+        run: python -m twine check --strict dist/*
+
+      - name: Upload artefacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+
+  publish-pypi:
+    name: Publish to PyPI (OIDC Trusted Publisher)
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/cleantest-agent
+    steps:
+      - name: Download artefacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          # No token: this action negotiates an OIDC ID-token with PyPI
+          # via the registered Trusted Publisher (configured under
+          # https://pypi.org/manage/account/publishing/).
+          packages-dir: dist/
+          attestations: true
+          print-hash: true
+
+  sign-and-attach:
+    name: Sign with sigstore + attach to Release
+    needs: publish-pypi
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artefacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Sign with sigstore (keyless OIDC)
+        uses: sigstore/gh-action-sigstore-python@v3.0.0
+        with:
+          inputs: ./dist/*.tar.gz ./dist/*.whl
+
+      - name: Upload signed artefacts to GitHub Release
+        # gh release upload is idempotent with --clobber; safe to re-run.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${GITHUB_REF##*/}"
+          gh release upload "$tag" \
+            ./dist/*.tar.gz \
+            ./dist/*.whl \
+            ./dist/*.sigstore.json \
+            --repo "${{ github.repository }}" \
+            --clobber
