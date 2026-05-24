@@ -25,7 +25,7 @@ public int getCount(List<Item> items) {
 **Example**:
 ```java
 try { doWork(); }
-catch (IOException e) { }  // empty catch — exception caught but not handled
+catch (IOException e) { }  // empty catch -- exception caught but not handled
 ```
 
 ## N3: Missing Implementation (Empty Function)

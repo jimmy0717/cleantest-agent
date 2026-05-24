@@ -91,5 +91,5 @@ python skills/cleantest-relevance-filter/scripts/llm_relevance.py \
 
 ## Scripts
 
-- `scripts/relevance_filter.py` — Main filter logic
-- `scripts/llm_relevance.py` — LLM fallback client
+- `scripts/relevance_filter.py` -- Main filter logic
+- `scripts/llm_relevance.py` -- LLM fallback client

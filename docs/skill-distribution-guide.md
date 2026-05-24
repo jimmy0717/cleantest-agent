@@ -7,7 +7,7 @@ distribution boundary between the Python package and the four skills.
 
 If you only want to run the pipeline locally as a CLI tool, you can stop
 after the first section ("Install the runtime"). If you want a coding
-assistant (CodeBuddy, Claude Code, Cursor, …) to invoke the filters via
+assistant (CodeBuddy, Claude Code, Cursor, ...) to invoke the filters via
 natural language, follow the rest of the document.
 
 ---
@@ -34,10 +34,10 @@ the package must be importable in the Python environment your coding
 assistant launches subprocesses in.
 
 ```bash
-# Option A — once published on PyPI:
+# Option A -- once published on PyPI:
 pip install cleantest-agent
 
-# Option B — from a local checkout (today):
+# Option B -- from a local checkout (today):
 git clone https://github.com/jimmy0717/cleantest-agent.git
 cd cleantest-agent
 pip install -e .
@@ -154,7 +154,7 @@ export OPENAI_MODEL="deepseek-chat"                    # default
 ```
 
 If `OPENAI_API_KEY` is unset, the skills fall back to rule-only mode
-without raising an error — so the pipeline still produces a valid clean
+without raising an error -- so the pipeline still produces a valid clean
 dataset, just without the optional LLM rescue/confirm step.
 
 ---

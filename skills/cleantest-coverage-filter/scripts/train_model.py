@@ -1,4 +1,5 @@
-"""Training script for the Filter 3 coverage regression model.
+"""Training script for the Filter 3 coverage regression model
+(PyTorch + HuggingFace Transformers variant).
 
 Default base model: ``Qwen/Qwen2.5-Coder-0.5B`` (Alibaba Tongyi Lab,
 500M parameters, code-specific pre-training).  Fine-tunes the model
@@ -7,8 +8,15 @@ focal method and its paired test case.
 
 Hardware budget
 ---------------
-The default hyperparameters target a single NVIDIA V100 32 GB
-(e.g. Baidu PaddlePaddle AI Studio):
+This is the **portable variant** of the training pipeline. The
+configuration that produced the held-out numbers reported in
+``report/main.tex`` Section 7.5 is the PaddlePaddle variant in
+``../scripts_paddle/`` running on a single NVIDIA A800 80 GB. This
+PyTorch script targets smaller GPUs (e.g. NVIDIA V100 32 GB) where
+bf16 is unavailable; the recipe is functionally equivalent provided
+the *effective* batch size and learning rate are kept the same.
+
+Default hyperparameters here target a single NVIDIA V100 32 GB:
 
 * fp16 mixed precision (V100 does not support bf16)
 * per-device train batch size 8
@@ -29,7 +37,7 @@ naive HuggingFace Trainer setup:
 * 2 epochs (instead of 3) with a cosine LR schedule -- regression
   loss plateaus before epoch 3 in our pilot runs;
 * ``attn_implementation="sdpa"`` to ensure the PyTorch fused
-  scaled-dot-product attention kernel is used on V100;
+  scaled-dot-product attention kernel is used on the GPU;
 * a ``--train_subsample`` flag for a fast smoke run (e.g. 0.1 = 10
   % of training rows) before committing to a full pass.
 
@@ -167,7 +175,7 @@ def main():
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument(
         "--fp16", action="store_true", default=True,
-        help="Enable fp16 mixed precision (V100 default).",
+        help="Enable fp16 mixed precision (default for GPUs without bf16 support, e.g. V100). Prefer --bf16 on Ampere/Hopper.",
     )
     parser.add_argument(
         "--no_fp16", dest="fp16", action="store_false",
@@ -350,7 +358,7 @@ def main():
 
     data_collator = DataCollatorWithPadding(
         tokenizer=tokenizer,
-        pad_to_multiple_of=8,  # tensor-core friendly on V100 fp16
+        pad_to_multiple_of=8,  # tensor-core friendly for fp16 / bf16
     )
 
     callbacks = [

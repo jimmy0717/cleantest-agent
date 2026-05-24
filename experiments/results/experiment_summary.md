@@ -23,7 +23,7 @@
 | Rule-based (ours) | 1.000 | 1.000 | 1.000 | 1.000 | 0.11 | 0.2 |
 | LLM zero-shot | 0.505 | 0.221 | 0.307 | 0.540 | 1,487.37 | 2,974.7 |
 | LLM few-shot | 0.534 | 0.303 | 0.387 | 0.556 | 1,641.62 | 3,283.2 |
-| **Hybrid (ours)** | **0.974** | **0.956** | **0.965** | — | **<60** | — |
+| **Hybrid (ours)** | **0.974** | **0.956** | **0.965** | -- | **<60** | -- |
 
 ## Confusion Matrix Details
 
@@ -88,6 +88,6 @@ python3 experiments/run_baselines.py \
 
 ## Files
 
-- `baseline_results.json` — numeric results
-- `labeled_samples.csv` — per-sample predictions (500 rows)
-- `run_log.txt` — full execution log
+- `baseline_results.json` -- numeric results
+- `labeled_samples.csv` -- per-sample predictions (500 rows)
+- `run_log.txt` -- full execution log

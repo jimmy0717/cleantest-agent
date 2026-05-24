@@ -6,8 +6,8 @@ Prerequisites:
     pip install -e .
 
 Required environment variables:
-    OPENAI_API_KEY        — your API key
-    OPENAI_BASE_URL       — endpoint, e.g. https://api.deepseek.com/v1
+    OPENAI_API_KEY        -- your API key
+    OPENAI_BASE_URL       -- endpoint, e.g. https://api.deepseek.com/v1
                             (any OpenAI-compatible service works)
 """
 

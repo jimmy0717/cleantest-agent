@@ -59,9 +59,9 @@ Optional columns: `condition_cover_rate` (enables Filter 3 without model)
 ## Output
 
 After all stages complete, generate:
-1. `filtered_data.csv` — Cleaned dataset (rows that passed all filters)
-2. `noise_report.json` — Structured report with per-filter statistics
-3. `summary.md` — Human-readable summary
+1. `filtered_data.csv` -- Cleaned dataset (rows that passed all filters)
+2. `noise_report.json` -- Structured report with per-filter statistics
+3. `summary.md` -- Human-readable summary
 
 ## Execution
 
@@ -101,5 +101,5 @@ In CLI mode, the pipeline runs all stages automatically. When invoked through a 
 
 ## Scripts
 
-- `cleantest_agent/pipeline.py` — main orchestrator (exposed as the `cleantest` console script after install)
-- `references/pipeline-schema.json` — JSON Schema for input/output format
+- `cleantest_agent/pipeline.py` -- main orchestrator (exposed as the `cleantest` console script after install)
+- `references/pipeline-schema.json` -- JSON Schema for input/output format

@@ -33,11 +33,11 @@ corresponding to the original CleanTest paper's syntax filter.
 | ID | Type | Detection Method | LLM Enhanced |
 |----|------|-----------------|:------------:|
 | N1 | Syntax Errors | tree-sitter ERROR node | Yes (confirm if code is truly broken) |
-| N2 | Empty Exception Handling | catch/finally with empty block | — |
+| N2 | Empty Exception Handling | catch/finally with empty block | -- |
 | N3 | Missing Implementation | method body < 3 children | Yes (check if trivial test is valid) |
-| N4 | Ambiguous Data Type | generics markers (`<E>`, `<T>`, `<?>`, etc.) | — |
-| N5 | Unnecessary Annotations | Aho-Corasick automaton (21,954 patterns) | — |
-| N6 | Non-English Literals | regex for CJK characters | — |
+| N4 | Ambiguous Data Type | generics markers (`<E>`, `<T>`, `<?>`, etc.) | -- |
+| N5 | Unnecessary Annotations | Aho-Corasick automaton (21,954 patterns) | -- |
+| N6 | Non-English Literals | regex for CJK characters | -- |
 
 ## Usage
 
@@ -55,7 +55,7 @@ python skills/cleantest-syntax-filter/scripts/syntax_filter.py \
 @GetMapping("/api/users")
 public List<User> getUsers() { return repo.findAll(); }
 ```
-**Output**: `NOISE (unnecessary_annotations)` — matched via Aho-Corasick.
+**Output**: `NOISE (unnecessary_annotations)` -- matched via Aho-Corasick.
 
 ## LLM Enhancement Protocol
 
@@ -82,5 +82,5 @@ Only ~5% of samples typically require LLM confirmation.
 
 ## Scripts
 
-- `scripts/syntax_filter.py` — Main filter logic
-- `references/noise_rules.md` — Detailed noise type documentation
+- `scripts/syntax_filter.py` -- Main filter logic
+- `references/noise_rules.md` -- Detailed noise type documentation

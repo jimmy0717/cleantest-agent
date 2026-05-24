@@ -170,7 +170,7 @@ def main():
     )
     parser.add_argument(
         "--no_fp16", dest="fp16", action="store_false", default=True,
-        help="Disable fp16 inference (use fp32; ~2x slower on V100).",
+        help="Disable fp16 inference (use fp32; ~2x slower on tensor-core GPUs).",
     )
     args = parser.parse_args()
 

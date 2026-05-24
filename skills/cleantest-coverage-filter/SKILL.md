@@ -41,15 +41,22 @@ then applies the same threshold.
 > HuggingFace causal-LM / encoder backbone via `Auto*` classes.
 > Default base model is Qwen2.5-Coder-0.5B; alternatives that have
 > been wired up but not benchmarked include DeepSeek-Coder-1.3B and
-> the original GPT-2.
+> the original GPT-2. The default backbone has been trained
+> end-to-end on a single A800 80 GB and benchmarked on the held-out
+> test split: **MAE 0.0309 / RMSE 0.0628 / Pearson r 0.778 /
+> Spearman ρ 0.848** on continuous coverage, **F1 0.857 at
+> τ = 0.10** on threshold-aware low-coverage detection (see
+> `references/model-card.md` for the full table).
 
 **Note**: The original CleanTest paper used CodeGPT (achieving MAE 7.98%, MSE 1.05%)
 with a threshold of 0.01. Our model-mode default is Qwen2.5-Coder-0.5B (500M
 parameters, 2024, code-specific pre-training) selected as a stronger and
 more recent open-weights replacement for CodeGPT, with the same default
-threshold of 0.01. In environments without a trained checkpoint or without
-a GPU, the filter automatically falls back to **label mode**, which reads
-the JaCoCo `condition_cover_rate` column directly from the input CSV.
+threshold of 0.01. Held-out MAE on our 80/10/10 stratified split is
+**0.0309**, a ~2.6× reduction relative to CodeGPT's reported MAE of 0.0798.
+In environments without a trained checkpoint or without a GPU, the
+filter automatically falls back to **label mode**, which reads the
+JaCoCo `condition_cover_rate` column directly from the input CSV.
 
 ## Model Details
 
@@ -57,12 +64,13 @@ the JaCoCo `condition_cover_rate` column directly from the input CSV.
 |----------|-------|
 | Default Base Model | `Qwen/Qwen2.5-Coder-0.5B` (500M params, 2024, Alibaba Tongyi Lab) |
 | Original Paper Baseline | CodeGPT (MAE: 7.98%, MSE: 1.05%) |
+| Held-out Test MAE / MSE | **0.0309 / 0.0039** (~2.6× / ~2.7× reduction over CodeGPT) |
 | Task | Regression (SequenceClassification, num_labels=1) |
 | Input | Concatenation of focal method + test case via `[SEP]` |
 | Output | Predicted branch coverage |
 | Threshold | 0.01 (configurable; same as original paper) |
-| Recommended Hardware | Single NVIDIA V100 32 GB (e.g. Baidu PaddlePaddle AI Studio) |
-| Training time (default config) | ~5--7 hours on V100 32 GB, 3 epochs, fp16 |
+| Recommended Hardware | Single NVIDIA A800 80 GB on Baidu PaddlePaddle AI Studio (used to produce the held-out numbers); the PyTorch variant in `scripts/` runs the same recipe on smaller GPUs by lowering per-device batch size |
+| Training time (A800 80 GB, default config) | ~3.32 hours (11,951 s), 2 epochs, bf16, batch 64 |
 | Alternative backbones supported | `deepseek-ai/deepseek-coder-1.3b-base`, `openai-community/gpt2`, any other HF Hub `*ForSequenceClassification` model |
 
 ## Modes
@@ -106,14 +114,28 @@ python skills/cleantest-coverage-filter/scripts/prepare_data.py \
   --input_csv path/to/filter_train.csv \
   --output_dir path/to/splits
 
-# 2. Fine-tune Qwen2.5-Coder-0.5B (V100 32 GB, ~5-7 hours).
+# 2. Fine-tune Qwen2.5-Coder-0.5B.
+#    Primary path (PaddlePaddle on A800 80 GB, bf16, batch 64,
+#    ~3.32 h; the configuration that produced the held-out
+#    numbers in the paper):
+python skills/cleantest-coverage-filter/scripts_paddle/train_model.py \
+  --base_model Qwen/Qwen2.5-Coder-0.5B \
+  --train_csv path/to/splits/train.csv \
+  --valid_csv path/to/splits/valid.csv \
+  --output_model path/to/checkpoint \
+  --epochs 2 --batch_size 64 \
+  --learning_rate 3e-5 --max_seq_length 512 --bf16
+
+#    Portable alternative (PyTorch + HuggingFace, runs on smaller
+#    GPUs; lower per-device batch size + gradient accumulation
+#    keep the effective batch size unchanged):
 python skills/cleantest-coverage-filter/scripts/train_model.py \
   --base_model Qwen/Qwen2.5-Coder-0.5B \
   --train_csv path/to/splits/train.csv \
   --valid_csv path/to/splits/valid.csv \
   --output_model path/to/checkpoint \
-  --epochs 3 --batch_size 8 --gradient_accumulation_steps 2 \
-  --learning_rate 2e-5 --max_seq_length 512 --fp16
+  --epochs 2 --batch_size 8 --gradient_accumulation_steps 8 \
+  --learning_rate 3e-5 --max_seq_length 512 --fp16
 
 # 3. Held-out evaluation (MAE / MSE / RMSE / R^2 / Pearson / Spearman /
 #    threshold-aware F1 of low-coverage detection).
@@ -124,9 +146,9 @@ python skills/cleantest-coverage-filter/scripts/evaluate_model.py \
   --threshold 0.01
 ```
 
-A turn-key launcher for Baidu PaddlePaddle AI Studio (V100 32 GB) is
-provided as
-`scripts/train_qwen_baidu.sh`.
+A turn-key end-to-end notebook for the primary A800 80 GB path is
+provided as `experiments/main-final.ipynb`; a single-script launcher
+for the portable PyTorch path lives at `scripts/train_qwen_baidu.sh`.
 
 ## Fallback
 
@@ -137,8 +159,9 @@ still apply Filter 1 (Syntax) and Filter 2 (Relevance).
 ## Scripts
 
 - `scripts/prepare_data.py` --- Stratified 80/10/10 split helper
-- `scripts/train_model.py` --- Fine-tune Qwen2.5-Coder-0.5B (or any HF backbone)
+- `scripts/train_model.py` --- Fine-tune Qwen2.5-Coder-0.5B (PyTorch + HuggingFace; any HF backbone)
 - `scripts/evaluate_model.py` --- Held-out test metrics (MAE / MSE / R^2 / corr / F1)
 - `scripts/coverage_predictor.py` --- Inference script (label mode + model mode)
-- `scripts/train_qwen_baidu.sh` --- Baidu AI Studio V100 32 GB launcher
-- `references/model-card.md` --- Model documentation
+- `scripts/train_qwen_baidu.sh` --- Single-script launcher for the portable PyTorch + Transformers path (configurable per-device batch size; runs on any CUDA GPU with `transformers` installed)
+- `scripts_paddle/train_model.py` --- PaddlePaddle + PaddleNLP variant; produced the held-out numbers reported in the paper on a single A800 80 GB
+- `references/model-card.md` --- Model documentation (full held-out test table)

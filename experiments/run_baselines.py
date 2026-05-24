@@ -1,7 +1,7 @@
 """Baseline comparison experiments.
 
 Compares:
-  - Baseline 1: Original CleanTest (rules only, no LLM) — our system
+  - Baseline 1: Original CleanTest (rules only, no LLM) -- our system
   - Baseline 2: Pure LLM zero-shot (ask GPT-4o-mini directly)
   - Baseline 3: Pure LLM few-shot (5 examples)
 

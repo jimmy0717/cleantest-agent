@@ -1,7 +1,17 @@
 #!/usr/bin/env bash
 # ----------------------------------------------------------------------
-# Filter 3 model-mode training launcher for Baidu PaddlePaddle AI Studio
-# (V100 32 GB, single-GPU notebook environment).
+# Filter 3 model-mode training launcher (PyTorch + Transformers
+# variant, portable to smaller GPUs such as V100 32 GB).
+#
+# NOTE: The held-out numbers in report/main.tex Section 7.5 were
+# produced by the PaddlePaddle variant in ../scripts_paddle/ on a
+# single A800 80 GB. This script is a functionally-equivalent
+# PyTorch + Transformers reimplementation for users who do not have
+# access to A800 / bf16 hardware. The default hyperparameters here
+# are tuned for a V100 32 GB single-GPU notebook environment; the
+# effective batch size (BATCH_SIZE * GRAD_ACCUM) and learning rate
+# should be kept identical to the A800 recipe (effective batch 64,
+# lr 3e-5) when reproducing the paper's regression quality.
 #
 # What this script does, in order:
 #   1) sanity-checks the Python and CUDA environment;
@@ -10,7 +20,7 @@
 #   3) downloads the Qwen2.5-Coder-0.5B base weights to a local cache;
 #   4) prepares an 80/10/10 stratified split of the LessIsMore-FSE2025
 #      filter_train.csv;
-#   5) launches train_model.py with V100-tuned hyperparameters;
+#   5) launches train_model.py with the smaller-GPU defaults below;
 #   6) writes a wall-clock log next to the produced checkpoint.
 #
 # Edit the four ROOT/INPUT/OUTPUT/HF_CACHE variables in the
@@ -33,12 +43,14 @@ LOG_FILE="${LOG_FILE:-${ROOT}/experiments/results/coverage_run/train.log}"
 HF_CACHE="${HF_CACHE:-${ROOT}/.hf_cache}"
 # Base model
 BASE_MODEL="${BASE_MODEL:-Qwen/Qwen2.5-Coder-0.5B}"
-# Training hyperparameters (V100 32 GB tuned, speed-optimized)
+# Training hyperparameters (smaller-GPU defaults; effective batch
+# size = BATCH_SIZE * GRAD_ACCUM should match the A800 recipe's 64
+# when reproducing the paper's regression quality).
 EPOCHS="${EPOCHS:-2}"
 BATCH_SIZE="${BATCH_SIZE:-8}"
-GRAD_ACCUM="${GRAD_ACCUM:-2}"
-MAX_LEN="${MAX_LEN:-384}"
-LR="${LR:-2e-5}"
+GRAD_ACCUM="${GRAD_ACCUM:-8}"
+MAX_LEN="${MAX_LEN:-512}"
+LR="${LR:-3e-5}"
 LR_SCHED="${LR_SCHED:-cosine}"
 NUM_WORKERS="${NUM_WORKERS:-4}"
 # Fraction of training rows to use; set to e.g. 0.1 for a fast smoke

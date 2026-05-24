@@ -1,0 +1,24 @@
+## Where is `noise_modifier_fm.txt`?
+
+The 21,954-pattern annotation dictionary used by Filter 1 lives in the
+Python package itself:
+
+    cleantest_agent/data/noise_modifier_fm.txt
+
+This is the **single source of truth**. The previous duplicate copy in
+this directory has been removed to avoid drift between the two files
+and to keep the open-source repository ~1.7 MB lighter.
+
+`cleantest_agent.pipeline` resolves the dictionary path automatically
+via `importlib.resources` (see the docstring of
+`_resolve_noise_modifier_path()` in `cleantest_agent/pipeline.py`), so
+no skill or downstream user has to know this path explicitly.
+
+If you really want a hard copy of the file inside the skill folder
+(e.g. for an air-gapped deployment), regenerate it with:
+
+```bash
+python -c "import importlib.resources, shutil; \
+shutil.copy(importlib.resources.files('cleantest_agent').joinpath('data/noise_modifier_fm.txt'), \
+            'skills/cleantest-syntax-filter/references/noise_modifier_fm.txt')"
+```

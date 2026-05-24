@@ -113,9 +113,9 @@ The assistant will read the corresponding `SKILL.md` and follow its instructions
 **Input:** CSV with `src_fm` and `target` columns.
 
 **Output:**
-- `filtered_data.csv` — cleaned dataset
-- `noise_report.json` — structured statistics
-- `summary.md` — human-readable report
+- `filtered_data.csv` -- cleaned dataset
+- `noise_report.json` -- structured statistics
+- `summary.md` -- human-readable report
 
 ### cleantest-syntax-filter (Filter 1)
 
@@ -124,7 +124,7 @@ The assistant will read the corresponding `SKILL.md` and follow its instructions
 **Purpose:** Detects 6 syntactic noise types (N1–N6) from the CleanTest paper, including unnecessary annotations matched against a 21,954-pattern dictionary.
 
 **Key Resources:**
-- `references/noise_modifier_fm.txt` — Dictionary of 21,954 annotation patterns
+- `references/noise_modifier_fm.txt` -- Dictionary of 21,954 annotation patterns
 - Uses Aho-Corasick automaton for fast matching
 
 ### cleantest-relevance-filter (Filter 2)

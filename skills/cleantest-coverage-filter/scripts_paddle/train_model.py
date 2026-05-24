@@ -1,8 +1,11 @@
 """Filter 3 coverage regression training (PaddlePaddle version).
 
-Designed for Baidu PaddlePaddle AI Studio's PaddlePaddle 2.x image
-on a single NVIDIA V100 32 GB. Uses ``paddlenlp`` to fine-tune
-``Qwen/Qwen2.5-Coder-0.5B`` as a single-scalar regressor.
+Designed for Baidu PaddlePaddle AI Studio's PaddlePaddle 3.x image
+on a single NVIDIA A800 80 GB (the configuration used to produce the
+held-out numbers reported in ``report/main.tex`` Section 7.5). The
+same script also runs on smaller GPUs by lowering ``--batch_size``
+and switching ``--bf16`` to ``--fp16``. Uses ``paddlenlp`` to
+fine-tune ``Qwen/Qwen2.5-Coder-0.5B`` as a single-scalar regressor.
 
 Inputs
 ------
@@ -75,12 +78,13 @@ def main():
     parser.add_argument("--output_model", default="./coverage_model_qwen_paddle")
     parser.add_argument("--base_model", default="Qwen/Qwen2.5-Coder-0.5B")
     parser.add_argument("--epochs", type=int, default=2)
-    parser.add_argument("--batch_size", type=int, default=8)
-    parser.add_argument("--gradient_accumulation_steps", type=int, default=2)
-    parser.add_argument("--learning_rate", type=float, default=2e-5)
+    parser.add_argument("--batch_size", type=int, default=64,
+                        help="Per-device train batch size (A800 80 GB default; lower on smaller GPUs and increase --gradient_accumulation_steps to keep the effective batch size at 64).")
+    parser.add_argument("--gradient_accumulation_steps", type=int, default=1)
+    parser.add_argument("--learning_rate", type=float, default=3e-5)
     parser.add_argument("--warmup_ratio", type=float, default=0.05)
     parser.add_argument("--weight_decay", type=float, default=0.01)
-    parser.add_argument("--max_seq_length", type=int, default=384)
+    parser.add_argument("--max_seq_length", type=int, default=512)
     parser.add_argument("--lr_scheduler_type", default="cosine",
                         choices=["linear", "cosine", "constant"])
     parser.add_argument("--train_subsample", type=float, default=1.0)
@@ -90,7 +94,7 @@ def main():
     parser.add_argument("--save_steps", type=int, default=2500)
     parser.add_argument("--dataloader_num_workers", type=int, default=4)
     parser.add_argument("--fp16", action="store_true", default=False,
-                        help="Mixed precision fp16 (V100). Prefer --bf16 on A100/A800.")
+                        help="Mixed precision fp16 (older GPUs without bf16 support). Prefer --bf16 on A100/A800/H100.")
     parser.add_argument("--bf16", action="store_true", default=False,
                         help="Mixed precision bf16 (A100/A800/H100; numerically stable).")
     parser.add_argument("--clip_labels", action="store_true", default=True,
@@ -117,6 +121,7 @@ def main():
             Trainer,
             TrainingArguments,
             EarlyStoppingCallback,
+            TrainerCallback,
         )
         from paddlenlp.data import DataCollatorWithPadding
         from paddle.io import Dataset
@@ -302,6 +307,40 @@ def main():
         return _compute_regression_metrics(preds, labels)
 
     callbacks = [EarlyStoppingCallback(early_stopping_patience=3)]
+
+    # ---- JSONL metrics callback: write one line per logging step / eval ----
+    # The notebook uses this file for live monitoring & plotting.
+    metrics_jsonl = Path(args.output_model) / "metrics.jsonl"
+    metrics_jsonl.parent.mkdir(parents=True, exist_ok=True)
+    metrics_jsonl.write_text("")  # truncate at start
+
+    class JsonlLogCallback(TrainerCallback):
+        """Write a JSONL line on every log / eval / save event."""
+
+        def _emit(self, kind, state, payload):
+            import json as _json, time as _time
+            row = {
+                "kind": kind,
+                "step": int(state.global_step),
+                "epoch": float(state.epoch) if state.epoch is not None else None,
+                "wall_time": _time.time(),
+                **payload,
+            }
+            with open(metrics_jsonl, "a") as fh:
+                fh.write(_json.dumps(row) + "\n")
+
+        def on_log(self, args, state, control, logs=None, **kwargs):
+            if logs:
+                self._emit("log", state, logs)
+
+        def on_evaluate(self, args, state, control, metrics=None, **kwargs):
+            if metrics:
+                self._emit("eval", state, metrics)
+
+        def on_save(self, args, state, control, **kwargs):
+            self._emit("save", state, {})
+
+    callbacks.append(JsonlLogCallback())
 
     trainer = Trainer(
         model=model,

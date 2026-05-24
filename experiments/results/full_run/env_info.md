@@ -4,7 +4,7 @@
 2026-05-18 23:49:11 CST
 
 ## Hardware
-Darwin JYYONGYANG-MC1 24.6.0 Darwin Kernel Version 24.6.0: Mon Jul 14 11:29:54 PDT 2025; root:xnu-11417.140.69~1/RELEASE_ARM64_T8122 arm64
+Darwin <hostname-redacted> 24.6.0 Darwin Kernel Version 24.6.0: Mon Jul 14 11:29:54 PDT 2025; root:xnu-11417.140.69~1/RELEASE_ARM64_T8122 arm64
 Apple M3
 Physical RAM: 16.0 GB
 
@@ -36,10 +36,10 @@ real 158.04 s  (2 min 38 sec)
 
 ## Files in this directory
 
-- `summary.md` — human-readable noise breakdown
-- `noise_report.json` — machine-readable per-noise-type counts
-- `filtered_data.sample.csv` — first 1,000 rows of the filtered output, kept for spot-checking
-- `run_log.txt` — full execution log
+- `summary.md` -- human-readable noise breakdown
+- `noise_report.json` -- machine-readable per-noise-type counts
+- `filtered_data.sample.csv` -- first 1,000 rows of the filtered output, kept for spot-checking
+- `run_log.txt` -- full execution log
 
 The full `filtered_data.csv` (~267 MB, 273,383 rows) is reproducible
 from the input CSV plus the reproduction command above and is not

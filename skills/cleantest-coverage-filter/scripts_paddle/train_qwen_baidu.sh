@@ -1,15 +1,18 @@
 #!/usr/bin/env bash
 # ----------------------------------------------------------------------
 # Filter 3 model-mode training launcher (PaddlePaddle version).
-# Default tuned for Baidu PaddlePaddle AI Studio's A800 80 GB image,
-# falls back gracefully on V100 32 GB by overriding env vars.
+# Defaults match the configuration that produced the held-out numbers
+# in report/main.tex Section 7.5 (A800 80 GB, bf16, batch 64,
+# max_seq 512, lr 3e-5 cosine, 2 epochs, ~3.32 h wall-clock).
+# Override the env vars below to run on smaller GPUs.
 #
 # Usage:
-#   # A800 80GB (default, bf16, batch 32, max_len 512):
+#   # A800 80 GB (default; the configuration used for the paper's numbers):
 #   bash scripts_paddle/train_qwen_baidu.sh
 #
-#   # V100 32GB (bf16 not supported -> use fp16, smaller batch):
-#   PRECISION=fp16 BATCH_SIZE=8 GRAD_ACCUM=2 MAX_LEN=384 \
+#   # Smaller GPU without bf16 support: switch to fp16 + smaller batch
+#   # but keep the effective batch size (BATCH_SIZE * GRAD_ACCUM) at 64:
+#   PRECISION=fp16 BATCH_SIZE=8 GRAD_ACCUM=8 MAX_LEN=512 \
 #   bash scripts_paddle/train_qwen_baidu.sh
 # ----------------------------------------------------------------------
 
@@ -24,13 +27,13 @@ LOG_FILE="${LOG_FILE:-${ROOT}/experiments/results/coverage_run/train_paddle.log}
 HF_CACHE="${HF_CACHE:-${ROOT}/.hf_cache}"
 BASE_MODEL="${BASE_MODEL:-Qwen/Qwen2.5-Coder-0.5B}"
 
-# A800-tuned defaults (override on V100 via env):
-PRECISION="${PRECISION:-bf16}"     # bf16 (A800/A100) or fp16 (V100)
+# A800-tuned defaults (override via env for smaller GPUs):
+PRECISION="${PRECISION:-bf16}"     # bf16 (A800/A100/H100) or fp16 (older Ampere/Volta)
 EPOCHS="${EPOCHS:-2}"
-BATCH_SIZE="${BATCH_SIZE:-32}"     # A800 80GB headroom; on V100 use 8
-GRAD_ACCUM="${GRAD_ACCUM:-1}"      # A800 needs no accumulation; on V100 use 2
-MAX_LEN="${MAX_LEN:-512}"          # A800 fits 512; on V100 use 384
-LR="${LR:-2e-5}"
+BATCH_SIZE="${BATCH_SIZE:-64}"     # A800 80 GB headroom; lower this on smaller GPUs
+GRAD_ACCUM="${GRAD_ACCUM:-1}"      # A800 needs no accumulation; raise to keep effective bs at 64
+MAX_LEN="${MAX_LEN:-512}"
+LR="${LR:-3e-5}"
 LR_SCHED="${LR_SCHED:-cosine}"
 NUM_WORKERS="${NUM_WORKERS:-4}"
 TRAIN_SUBSAMPLE="${TRAIN_SUBSAMPLE:-1.0}"

@@ -4,37 +4,48 @@ This document records the training procedure for the Filter 3 coverage
 regression model (Qwen2.5-Coder-0.5B) on Baidu PaddlePaddle AI Studio.
 The procedure described here is the one actually used to produce the
 held-out metrics reported in `report/main.tex`,
-Section 7.5 (`tab:filter3-model-mode`).
+Section 7.5 (`tab:filter3-model-mode`, `tab:filter3-classif-sweep`).
 
-The end-to-end run is also packaged as `cleantest-agent/main.ipynb`,
-which executes the same scripts cell by cell. This document is the
+The end-to-end run is also packaged as
+[`experiments/main-final.ipynb`](../experiments/main-final.ipynb), which
+executes the same scripts cell by cell. This document is the
 terminal-driven counterpart for users who prefer a shell session.
 
 ## Hardware and software
 
-| Item | Value |
+| Item | Value (used to produce the held-out numbers) |
 |---|---|
-| GPU | NVIDIA A800 80 GB |
-| Framework | PaddlePaddle 3.0 + PaddleNLP 3.0.0b3 |
-| Python | 3.10 |
-| Mixed precision | bf16 |
-| Effective batch size | 32 (per-device 32, no gradient accumulation) |
+| GPU | NVIDIA A800-SXM4-80 GB (Compute Capability 8.0, 79.3 GB HBM) |
+| Platform | Baidu PaddlePaddle AI Studio |
+| Framework | PaddlePaddle 3.0 + PaddleNLP 3.0.0b4 (`aistudio_sdk` 0.2.5) |
+| Python | 3.10.10 |
+| CUDA | 12.6 runtime under driver 12.8 |
+| Mixed precision | bf16 (natively supported on A800) |
+| Effective batch size | 64 (per-device 64, no gradient accumulation) |
 | Max sequence length | 512 |
-| Learning rate | 2e-5, cosine schedule |
+| Learning rate | 3e-5, cosine schedule |
+| Weight decay | 0.01 |
 | Epochs | 2 |
+| Wall-clock | ~11,951 s (~3.32 h) |
+| Held-out test MAE / RMSE / Pearson r | 0.0309 / 0.0628 / 0.778 |
 
-The PyTorch version of the same scripts (`scripts/train_qwen_baidu.sh`)
-also runs on V100 32 GB with `fp16`, `BATCH_SIZE=8`, `GRAD_ACCUM=2`,
-`MAX_LEN=384`. The PaddlePaddle scripts under `scripts_paddle/` are the
-ones that produced the numbers in the report.
+The PyTorch version of the same scripts
+(`skills/cleantest-coverage-filter/scripts/`, with the
+`train_qwen_baidu.sh` launcher) is provided as a portable alternative
+for users who want to reproduce the recipe on smaller GPUs; it has
+not been used to produce any numbers in this report. The
+PaddlePaddle scripts under `scripts_paddle/` are the ones that
+produced the held-out numbers reported in the paper.
 
 ## Prerequisites
 
 - An AI Studio notebook project with at least one A800 80 GB allocation.
 - The `filter_train.csv` dataset mounted under `/home/aistudio/data/`
   (LessIsMore-FSE2025 replication package, 469,174 rows, ~850 MB).
-- The repository archive `cleantest-agent-v3.zip` uploaded under
-  `/home/aistudio/work/`.
+- The repository archive `cleantest-agent-vN.zip` uploaded under
+  `/home/aistudio/work/` (any recent revision works; the scripts under
+  `skills/cleantest-coverage-filter/scripts_paddle/` are the only ones
+  this guide needs).
 
 ## Steps
 
@@ -49,8 +60,7 @@ PaddlePaddle 3.0 + Python 3.10, and restart. The persistent directory
 
 ```bash
 cd /home/aistudio/work
-unzip -oq cleantest-agent-v3.zip
-chmod +x cleantest-agent/skills/cleantest-coverage-filter/scripts_paddle/train_qwen_baidu.sh
+unzip -oq cleantest-agent-v*.zip
 ```
 
 ### 3. Verify the environment
@@ -64,17 +74,30 @@ print(paddle.device.cuda.get_device_properties(0).total_memory / 1024**3)
 from paddlenlp.transformers import Qwen2ForSequenceClassification, AutoTokenizer
 ```
 
-Expected: PaddlePaddle 3.0.x, PaddleNLP 3.0.0b3, device
-`NVIDIA A800-SXM4-80GB`, total memory near 79 GB. The
+Expected: PaddlePaddle 3.0.x, PaddleNLP 3.0.0b4 (b3 also works at the
+same API), device `NVIDIA A800-SXM4-80GB`, total memory near 79 GB. The
 `Qwen2ForSequenceClassification` import must succeed; otherwise the
 PaddleNLP installation is incomplete and needs
 
 ```bash
-pip install -U paddlenlp>=3.0.0b3 aistudio_sdk==0.2.5 \
-    jieba seqeval datasets scipy>=1.10 scikit-learn>=1.3 \
+# Install paddlenlp first, then pin aistudio_sdk back to 0.2.5
+# (PaddleNLP 3.0.0b3/b4 will silently upgrade aistudio_sdk and break
+# the import path unless the order is `paddlenlp` before
+# `aistudio_sdk==0.2.5`).
+pip install -U "paddlenlp>=3.0.0b3" \
+    -i https://pypi.tuna.tsinghua.edu.cn/simple
+pip install -U aistudio_sdk==0.2.5 \
+    "numpy>=1.26,<2.0" "scipy>=1.10,<1.13" \
+    jieba seqeval datasets scikit-learn>=1.3 \
     sentencepiece safetensors huggingface_hub>=0.20 modelscope>=1.30 \
     -i https://pypi.tuna.tsinghua.edu.cn/simple
 ```
+
+If `import paddlenlp` still fails with
+`ImportError: cannot import name 'download' from 'aistudio_sdk.hub'`, see
+the in-notebook patch in `experiments/main-final.ipynb` Cell 5
+(`_patch_aistudio_hub_download`), which monkey-patches the missing
+attribute without further pip churn.
 
 ### 4. Stage the dataset
 
@@ -105,56 +128,63 @@ Expected file size around 942 MB. ModelScope is preferred over
 `huggingface.co` because direct access to the latter is unreliable from
 the AI Studio network; `hf-mirror` works as a fallback.
 
-### 6. Smoke run (10 % of training data)
+### 6. Stratified split (once per dataset)
 
 ```bash
 cd /home/aistudio/work/cleantest-agent
 
-SKIP_INSTALL=1 \
-PRECISION=bf16 \
-TRAIN_SUBSAMPLE=0.1 \
-EPOCHS=1 \
-BATCH_SIZE=32 \
-GRAD_ACCUM=1 \
-MAX_LEN=512 \
-LR=2e-5 \
-BASE_MODEL=/home/aistudio/work/cleantest-agent/.ms_cache/Qwen/Qwen2___5-Coder-0___5B \
-MODEL_OUT=experiments/results/coverage_run/qwen_smoke_a800 \
-LOG_FILE=experiments/results/coverage_run/smoke_a800.log \
-bash skills/cleantest-coverage-filter/scripts_paddle/train_qwen_baidu.sh
+python skills/cleantest-coverage-filter/scripts_paddle/prepare_data.py \
+    --input_csv data/filter_train.csv \
+    --output_dir experiments/results/coverage_run/splits \
+    --seed 42
 ```
 
-Expected wall-clock: 8–10 minutes (1,173 optimisation steps plus one
-evaluation pass over the 47 K validation set). The run is considered
-healthy when the resulting `training_metrics.json` contains
+Resulting split sizes: 375,338 train / 46,915 valid / 46,921 test.
+
+### 7. Smoke run (10 % of training data)
+
+```bash
+cd /home/aistudio/work/cleantest-agent
+
+python skills/cleantest-coverage-filter/scripts_paddle/train_model.py \
+    --base_model /home/aistudio/work/cleantest-agent/.ms_cache/Qwen/Qwen2___5-Coder-0___5B \
+    --train_csv  experiments/results/coverage_run/splits/train.csv \
+    --valid_csv  experiments/results/coverage_run/splits/valid.csv \
+    --output_model experiments/results/coverage_run/qwen_smoke_a800 \
+    --epochs 1 --batch_size 64 --max_seq_length 512 \
+    --learning_rate 3e-5 --bf16 \
+    --train_subsample 0.1
+```
+
+Expected wall-clock on A800 80 GB: 8–10 minutes (~1,170 optimisation
+steps plus one evaluation pass over the 47 K validation set). The run is
+considered healthy when the resulting `training_metrics.json` contains
 `eval_mse < 0.05` and the training log shows monotonically decreasing
 loss.
 
-### 7. Full training
+### 8. Full training
 
 ```bash
 cd /home/aistudio/work/cleantest-agent
 
-nohup env SKIP_INSTALL=1 \
-    PRECISION=bf16 \
-    EPOCHS=2 \
-    BATCH_SIZE=32 \
-    GRAD_ACCUM=1 \
-    MAX_LEN=512 \
-    LR=2e-5 \
-    BASE_MODEL=/home/aistudio/work/cleantest-agent/.ms_cache/Qwen/Qwen2___5-Coder-0___5B \
-    MODEL_OUT=experiments/results/coverage_run/qwen_0p5b_a800 \
-    LOG_FILE=experiments/results/coverage_run/train_a800.log \
-    bash skills/cleantest-coverage-filter/scripts_paddle/train_qwen_baidu.sh \
-    > experiments/results/coverage_run/nohup_a800.out 2>&1 &
+# Run in the background so the SSH/notebook session can disconnect.
+nohup python skills/cleantest-coverage-filter/scripts_paddle/train_model.py \
+    --base_model /home/aistudio/work/cleantest-agent/.ms_cache/Qwen/Qwen2___5-Coder-0___5B \
+    --train_csv  experiments/results/coverage_run/splits/train.csv \
+    --valid_csv  experiments/results/coverage_run/splits/valid.csv \
+    --output_model experiments/results/coverage_run/qwen_0p5b_a800 \
+    --epochs 2 --batch_size 64 --max_seq_length 512 \
+    --learning_rate 3e-5 --bf16 \
+    > experiments/results/coverage_run/train_a800.log 2>&1 &
 
 echo "$!" > experiments/results/coverage_run/train_a800.pid
 ```
 
-Expected wall-clock: roughly three hours. The script checkpoints every
-2,500 steps and evaluates on the validation set at the same cadence; an
-early-stopping callback with patience 3 is registered, so the run may
-finish before all 23,460 steps if validation MSE stops improving.
+Expected wall-clock: **~3.32 hours** (~11,951 s; ~11,730 optimisation
+steps with batch 64 over the 375 K train rows × 2 epochs). A
+`JsonlLogCallback` writes one line per logging / eval / save step into
+`metrics.jsonl` inside the output directory, which the notebook's
+real-time progress panel reads.
 
 Progress can be monitored with:
 
@@ -163,9 +193,10 @@ PID=$(cat experiments/results/coverage_run/train_a800.pid)
 ps -p "$PID" -o pid,etime,cmd
 nvidia-smi --query-gpu=utilization.gpu,memory.used --format=csv,noheader
 tail -n 20 experiments/results/coverage_run/train_a800.log
+tail -n 5  experiments/results/coverage_run/qwen_0p5b_a800/metrics.jsonl
 ```
 
-### 8. Held-out evaluation
+### 9. Held-out evaluation
 
 ```bash
 cd /home/aistudio/work/cleantest-agent
@@ -187,17 +218,25 @@ The resulting JSON contains the nine fields used in
 `precision`, `recall`, `f1`, plus the confusion-matrix counts
 `tp`, `fp`, `fn`, `tn`.
 
-### 9. Files to download
+For the threshold-aware F1 sweep at multiple operationally meaningful
+thresholds (Table `tab:filter3-classif-sweep` in the paper), see
+`experiments/main-final.ipynb` Cell 21, which post-processes
+`test_pred_a800.csv` into `test_threshold_sweep.json`.
+
+### 10. Files to download
 
 The minimum set of files needed locally for editing the report:
 
 - `experiments/results/coverage_run/test_metrics.json`
+- `experiments/results/coverage_run/test_threshold_sweep.json`
+- `experiments/results/coverage_run/test_pred_a800.csv`
 - `experiments/results/coverage_run/qwen_0p5b_a800/training_metrics.json`
+- `experiments/results/coverage_run/qwen_0p5b_a800/metrics.jsonl`
 - `experiments/results/coverage_run/train_a800.log`
 
 The trained checkpoint itself (about 1 GB) does not need to be
 downloaded for grading; the evaluation script writes all reportable
-numbers into `test_metrics.json`.
+numbers into `test_metrics.json` and `test_pred_a800.csv`.
 
 ## Known issues and fixes
 
@@ -209,6 +248,7 @@ numbers into `test_metrics.json`.
 | Training loss stuck near 5.0 | An older draft of the script omitted the sigmoid wrapper around the regression head. The current `train_model.py` wraps the forward pass with sigmoid + MSE so that the output stays in [0, 1]. |
 | `Repo id must be in form ...` from `snapshot_download` | The script branches on `[[ -d $BASE_MODEL ]]` and skips the download when a local directory is supplied. |
 | `_bounded_forward() got multiple values for argument 'input_ids'` | The PaddleNLP `wrap_fwd` decorator calls the forward as `value(self, *args, **kwargs)`. The wrapper signature must explicitly receive `self`. The current script uses `def _bounded_forward(self, *fwd_args, **fwd_kwargs)`. |
+| `ImportError: cannot import name 'download' from 'aistudio_sdk.hub'` | PaddleNLP 3.0.0b3/b4 expects an older `aistudio_sdk` API; new versions removed `hub.download`. Either install `aistudio_sdk==0.2.5` strictly *after* `paddlenlp`, or apply the in-notebook monkey-patch `_patch_aistudio_hub_download` from `experiments/main-final.ipynb` Cell 5. |
 
 ## Reproducibility
 
@@ -216,5 +256,6 @@ All randomness is seeded via `--seed 42` (default). The 80/10/10 split
 is a stratified split by quintile of `condition_cover_rate`, so
 re-running `prepare_data.py` on the same input CSV produces identical
 splits across hardware. The training script writes a JSON record of the
-exact arguments used, so the metrics file plus the log alone are
-sufficient to reconstruct the configuration of any run.
+exact arguments used into `training_metrics.json`, so the metrics file
+plus the log alone are sufficient to reconstruct the configuration of
+any run.

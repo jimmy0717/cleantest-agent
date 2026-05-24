@@ -3,10 +3,10 @@
 ## CleanTest-Agent
 ### A Multi-Agent Skill-Orchestrated System for Unit Test Training Data Quality Assurance
 
-Yong Yang — School of Software, Beihang University
+Yong Yang -- School of Software, Beihang University
 yang_qhd@buaa.edu.cn
 
-Software Requirements Analysis & System Design — Final Project
+Software Requirements Analysis & System Design -- Final Project
 
 ---
 
@@ -45,10 +45,10 @@ User / Coding Assistant (natural language)
         |          |          |
         v          v          v
    Filter 1   Filter 2    Filter 3
-   Syntax    Relevance    Coverage
-   AST +     NameMatch    label scan
-   Aho-      + LLM        (default) /
-   Corasick  fallback     Qwen2.5-Coder
+   Syntax     Relevance   Coverage
+   AST +      NameMatch   label scan (default) /
+   Aho-       + LLM       Qwen2.5-Coder-0.5B
+   Corasick   fallback    (model mode)
         |          |          |
         +----------+----------+
                    v
@@ -56,6 +56,11 @@ User / Coding Assistant (natural language)
 ```
 
 - 4 composable Agent Skills following the SKILL.md protocol.
+- Filter 3 ships **two modes**: a deterministic label-mode row scan
+  over JaCoCo `condition_cover_rate` (default; no model, no GPU),
+  and a **model mode** that delegates to a fine-tuned
+  Qwen2.5-Coder-0.5B regression checkpoint when no ground-truth
+  labels are available.
 - Compatible with CodeBuddy, Claude Code, and Cursor.
 - Each filter is independently testable and extensible.
 
@@ -74,14 +79,17 @@ User / Coding Assistant (natural language)
 vs. pure LLM: rules handle 87.3% (free, instant); LLM handles only the
 12.7% where it adds value.
 
-### Reflection mechanism (Filter 2)
+### Reflection mechanism (Filter 2, opt-in)
 
 - Inspired by the Lab 1 Reflection Agent pattern.
-- When the LLM's initial verdict is IRRELEVANT, a structured
-  self-reflection step applies a 5-rule checklist drawn from the
-  software-testing literature: Call Graph (extended from Tufano 2022),
-  State Verification (Meszaros 2007), Behavior Verification
-  (Meszaros 2007), Naming Equivalence, Counterfactual.
+- Implemented as opt-in `--reflection` flag (default off, so the
+  headline F1 = 0.965 below does **not** include reflection).
+- When enabled and the LLM's initial verdict is IRRELEVANT, a
+  structured self-reflection step applies a 5-rule checklist
+  drawn from the software-testing literature: Call Graph
+  (extended from Tufano 2022), State Verification (Meszaros 2007),
+  Behavior Verification (Meszaros 2007), Naming Equivalence,
+  Counterfactual.
 - Validation on 45 zero-overlap samples: 7 verdicts changed (15.6%
   change rate); 5 rescued from false removal (11.1% rescue rate);
   6 / 7 changes verified correct by manual inspection (85.7% accuracy).
@@ -95,7 +103,7 @@ vs. pure LLM: rules handle 87.3% (free, instant); LLM handles only the
 
 ---
 
-# Slide 5: Key Optimization — Aho-Corasick
+# Slide 5: Key Optimization -- Aho-Corasick
 
 ## ~11.5× Pipeline Speedup
 
@@ -106,7 +114,7 @@ vs. pure LLM: rules handle 87.3% (free, instant); LLM handles only the
 | Time (600 K samples) | ~30 min | ~2.6 min |
 | Filtering result | 53.97% removed | 53.97% removed (identical) |
 
-Pure performance optimization — correctness unchanged.
+Pure performance optimization -- correctness unchanged.
 
 ---
 
@@ -148,7 +156,7 @@ Pure performance optimization — correctness unchanged.
 
 ---
 
-# Slide 8: Why Pure LLM Falls Short — A Real Sample
+# Slide 8: Why Pure LLM Falls Short -- A Real Sample
 
 ```java
 @PostMapping(path = "/account/new")
@@ -200,16 +208,25 @@ Course-lab method integration:
 
 1. Skill-based architecture for test data cleaning (4 composable
    Agent Skills via the SKILL.md protocol).
-2. Hybrid rule + LLM detection — F1 = 0.965 vs. pure-LLM 0.387
+2. Hybrid rule + LLM detection -- F1 = 0.965 vs. pure-LLM 0.387
    on real-API experiments.
-3. Aho-Corasick optimization — ~11.5× pipeline speedup
+3. Aho-Corasick optimization -- ~11.5× pipeline speedup
    (~18.8× on Filter 1 alone) without changing the filtering result.
-4. Reflection mechanism — a 5-rule structured self-check for
-   borderline relevance cases (inspired by Lab 1).
+4. Two methodological enhancements over the original CleanTest:
+   (a) **Reflection** -- an opt-in 5-rule structured self-check for
+   borderline relevance cases in Filter 2 (inspired by Lab 1,
+   default off, additive on top of the headline F1 = 0.965),
+   rescuing 5/45 (11.1%) borderline samples with 6/7 (85.7%)
+   human-verified accuracy; (b) **Filter 3 model mode** -- fine-tuned
+   Qwen2.5-Coder-0.5B on `filter_train.csv` (469 K rows,
+   stratified 80/10/10) on a single A800 80 GB (~3.32 h),
+   achieving held-out **MAE 0.0309 vs. CodeGPT 0.0798 (~2.6× lower)**
+   and **F1 = 0.857 at τ = 0.10**; replaces the CodeGPT backbone of
+   the original CleanTest paper.
 
 ## Core Message
 
-> Systematic software design beats "just ask the LLM" — supported by
+> Systematic software design beats "just ask the LLM" -- supported by
 > real-API experiments and a reproducible CI/CD pipeline.
 
 ---
