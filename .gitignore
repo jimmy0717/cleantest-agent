@@ -114,11 +114,15 @@ cleantest-agent-v*.zip
 # and the build script `ppt/build-deck.sh` are the source of truth and
 # remain tracked; the rendered .pdf / .pptx / .html / .key artefacts
 # are author-side deliverables, deliberately not committed.
-ppt/CleanTest-Agent.pdf
-ppt/CleanTest-Agent.pptx
-ppt/CleanTest-Agent.html
-ppt/CleanTest-Agent.key
+ppt/CleanTest-Agent*.pdf
+ppt/CleanTest-Agent*.pptx
+ppt/CleanTest-Agent*.html
+ppt/CleanTest-Agent*.key
 ppt/preview-p*.png
+ppt/preview-buaa-p*.png
 ppt/_p*.pdf
+ppt/_buaa_p*.pdf
+ppt/~$*.pptx
+ppt/~$*.docx
 # School-provided PPT template (BUAA branding; not redistributed).
 ppt/北航PPT版式*.pptx
