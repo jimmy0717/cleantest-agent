@@ -1,8 +1,13 @@
 # Generating the README hero image
 
-The README references `docs/assets/hero.png`. We do not commit a generated
-image to the repo (you can re-generate it any time, the prompt below is
-the source of truth), but the README expects something to live there.
+The README references `docs/assets/hero.png`. The committed copy was
+generated from the prompt below and cropped to a 1264 x 528 banner
+(approx. 2.4:1). The original 1264 x 848 source image is also
+checked in at
+`docs/assets/A_wide_horizontal_hero_banner__2026-05-24T09-01-44.png`
+so the hero can be re-cropped or re-styled without re-running the
+generator. The prompt below is the source of truth: regenerate any
+time, drop the result in at `docs/assets/hero.png`.
 
 ## Recommended: nano banana (Gemini 2.5 Flash Image) prompt
 

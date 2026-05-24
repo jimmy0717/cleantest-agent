@@ -1,8 +1,5 @@
 <div align="center">
 
-<!-- Replace this line with the hero image once you generate one. See
-     docs/HERO-IMAGE-PROMPT.md for the prompt to use with nano banana
-     (Gemini 2.5 Flash Image) or any other text-to-image model. -->
 <img src="docs/assets/hero.png" alt="CleanTest-Agent" width="720">
 
 # CleanTest-Agent
