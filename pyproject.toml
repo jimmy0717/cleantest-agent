@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cleantest-agent"
-version = "0.1.0"
+version = "0.1.1"
 description = "Rule-first three-filter pipeline for cleaning unit-test training data, packaged as four SKILL.md skills."
 readme = "README.md"
 license = "MIT"
